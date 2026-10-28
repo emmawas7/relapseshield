@@ -1,0 +1,17 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Base application theme. -->
+    <style name="Base.Theme.RelapseShield" parent="Theme.Material3.Light.NoActionBar">
+        <item name="colorPrimary">@color/primary</item>
+        <item name="colorOnPrimary">@color/on_primary</item>
+        <item name="colorPrimaryContainer">@color/primary_light</item>
+        <item name="colorOnPrimaryContainer">@color/primary_dark</item>
+        <item name="colorError">@color/error_red</item>
+        <item name="colorSurface">@color/surface</item>
+        <item name="colorOnSurface">@color/text_dark</item>
+        <item name="colorOnSurfaceVariant">@color/text_muted</item>
+        <item name="colorOutline">@color/text_muted</item>
+        <item name="android:colorBackground">@color/surface</item>
+    </style>
+
+    <style name="Theme.RelapseShield" parent="Base.Theme.RelapseShield" />
+</resources>

@@ -1,0 +1,200 @@
+<resources>
+    <string name="app_name">Relapse Shield</string>
+    <string name="logo_description">Relapse Shield logo, a shield with a tick</string>
+
+    <string name="welcome_headline">Unwavering recovery You\'re not alone.</string>
+    <string name="welcome_subline">A private space to check in, notice your triggers and reach someone you trust when it matters.</string>
+
+    <string name="benefit_1">Check-ins just a minute away</string>
+    <string name="benefit_2">Track your progress and setbacks</string>
+    <string name="benefit_3">Reach your trusted support in one tap</string>
+
+    <string name="trust_text">Built for privacy, security and trust.</string>
+
+    <string name="btn_register">Get started</string>
+    <string name="btn_login">I already have an account</string>
+
+    <string name="toast_register_soon">Register screen coming next</string>
+    <string name="toast_login_soon">Login screen coming next</string>
+    <string name="login_title">Welcome back</string>
+    <string name="login_subtitle">Log in to continue your check-ins</string>
+    <string name="hint_email">Email address</string>
+    <string name="hint_password">Password</string>
+    <string name="remember_me">Remember me</string>
+    <string name="btn_login_submit">Log in</string>
+    <string name="login_register_prompt">New here? Create an account</string>
+
+    <string name="error_email_required">Enter your email address</string>
+    <string name="error_email_invalid">Enter a valid email address</string>
+    <string name="error_password_required">Enter your password</string>
+    <string name="error_password_short">Password must be at least 6 characters</string>
+    <string name="error_login_failed">Incorrect email or password</string>
+    <string name="welcome_back_format">Welcome back, %1$s!</string>
+    <string name="register_title">Create your account</string>
+    <string name="register_subtitle">It takes under a minute. We only ask for what we need.</string>
+    <string name="hint_nickname">Nickname</string>
+    <string name="hint_confirm_password">Confirm password</string>
+    <string name="password_helper">At least 8 characters, with a letter and a number</string>
+    <string name="consent_text">I understand that Relapse Shield supports my recovery and does not replace professional treatment.</string>
+    <string name="btn_register_submit">Create account</string>
+    <string name="register_login_prompt">Already have an account? Log in</string>
+
+    <string name="error_nickname_required">Choose a nickname</string>
+    <string name="error_nickname_short">Nickname must be at least 2 characters</string>
+    <string name="error_password_weak">Use at least 8 characters, with a letter and a number</string>
+    <string name="error_confirm_required">Re-enter your password</string>
+    <string name="error_password_mismatch">Passwords do not match</string>
+    <string name="error_email_taken">An account with this email already exists</string>
+    <string name="error_consent_required">Please tick the box to continue</string>
+    <string name="register_success">Account created. Log in to continue.</string>
+    <string name="home_greeting_format">Hello, %1$s</string>
+    <string name="home_default_name">friend</string>
+    <string name="home_subtitle">How are you feeling today?</string>
+    <string name="home_logout">Log out</string>
+    <string name="home_recent_title">Recent check-ins</string>
+    <string name="btn_new_checkin">New check-in</string>
+    <string name="btn_emergency">Emergency</string>
+    <string name="toast_emergency_soon">Emergency screen coming in Milestone 2</string>
+    <string name="toast_logged_out">You have been logged out</string>
+    <string name="role_patient">Patient</string>
+    <string name="role_counsellor">Counsellor</string>
+    <string name="error_register_failed">Could not create your account. Please try again.</string>
+    <string name="error_network">No internet connection. Check your network and try again.</string>
+    <string name="error_login_unexpected">Could not sign in. Please try again.</string>
+    <string name="error_profile_missing">Your profile was not found. Please register again.</string>
+
+    <!-- Check-in form -->
+    <string name="checkin_title">New check-in</string>
+    <string name="checkin_subtitle">Be honest. This is just for you and your counsellor.</string>
+    <string name="checkin_mood_label">How is your mood today?</string>
+    <string name="checkin_mood_label_format">Mood today: %1$d / 5</string>
+    <string name="checkin_mood_hint">1 is very low, 5 is very good</string>
+    <string name="checkin_cravings_label">How strong are your cravings?</string>
+    <string name="craving_none">None</string>
+    <string name="craving_low">Low</string>
+    <string name="craving_medium">Medium</string>
+    <string name="craving_high">High</string>
+    <string name="checkin_triggered">I felt triggered today</string>
+    <string name="hint_note">Anything you want to note about today?</string>
+    <string name="btn_save_checkin">Save check-in</string>
+    <string name="checkin_cancel">Cancel</string>
+    <string name="checkin_saved">Check-in saved</string>
+    <string name="error_checkin_failed">Could not save your check-in. Please try again.</string>
+    <string name="error_load_checkins">Could not load your check-ins.</string>
+    <string name="home_no_checkins">No check-ins yet. Tap New check-in to add your first.</string>
+    <string name="checkin_date_unknown">Today</string>
+    <string name="checkin_line_mood_format">Mood %1$d/5</string>
+    <string name="checkin_line_cravings_format">Cravings %1$s</string>
+    <string name="checkin_line_triggered">Felt triggered</string>
+
+    <string-array name="craving_levels">
+        <item>none</item>
+        <item>low</item>
+        <item>medium</item>
+        <item>high</item>
+    </string-array>
+    <!-- Register -->
+    <string name="rg_role_patient">I am a patient</string>
+    <string name="rg_role_counsellor">I am a counsellor</string>
+    <string name="rg_hint_name">Full name</string>
+    <string name="rg_hint_phone">Phone number (07XXXXXXXX)</string>
+    <string name="rg_hint_area">Home area (village, parish, landmark)</string>
+    <string name="rg_hint_kin_name">Next of kin or guardian: full name</string>
+    <string name="rg_hint_kin_phone">Next of kin or guardian: phone number</string>
+    <string name="rg_kin_relation_label">Their relationship to you</string>
+    <string name="rg_hint_code">Your counsellor\'s code</string>
+    <string name="rg_code_helper">The 6-character code your counsellor gave you</string>
+    <string name="rg_consent">I understand that Relapse Shield supports recovery and does not replace professional treatment, and that check-ins and contact details are shared only between a patient and their own counsellor.</string>
+    <string name="rg_error_name_required">Enter your full name</string>
+    <string name="rg_error_name_short">Name must be at least 2 characters</string>
+    <string name="rg_error_phone_required">Enter a phone number</string>
+    <string name="rg_error_phone_invalid">Use 07XXXXXXXX or +2567XXXXXXXX</string>
+    <string name="rg_error_area_required">Enter your home area</string>
+    <string name="rg_error_kin_name_required">Enter your next of kin\'s name</string>
+    <string name="rg_error_kin_phone_required">Enter your next of kin\'s phone number</string>
+    <string name="rg_error_code_required">Enter your counsellor\'s code</string>
+    <string name="rg_error_code_invalid">That code was not found</string>
+    <string name="rg_error_request_failed">Could not register. That counsellor may not be active yet.</string>
+    <string name="rg_success_patient">Account created. Log in, and your counsellor will confirm you.</string>
+    <string name="rg_success_counsellor">Account created. It must be approved before you can see patients.</string>
+    <string-array name="rg_relations">
+        <item>Parent</item>
+        <item>Spouse or partner</item>
+        <item>Sibling</item>
+        <item>Child</item>
+        <item>Other relative</item>
+        <item>Friend</item>
+        <item>Guardian</item>
+    </string-array>
+
+    <!-- Link to counsellor -->
+    <string name="lk_title">Connect with your counsellor</string>
+    <string name="lk_subtitle">Your counsellor must confirm you before they can see anything.</string>
+    <string name="lk_status_none">You are not connected to a counsellor yet.</string>
+    <string name="lk_status_pending">Waiting for %1$s to confirm you.</string>
+    <string name="lk_status_declined">%1$s declined this request. Check the code with your counsellor and try again.</string>
+    <string name="lk_send">Send request</string>
+    <string name="lk_refresh">Check again</string>
+    <string name="lk_sent">Request sent</string>
+    <string name="lk_failed">Could not send the request. Please try again.</string>
+
+    <!-- Counsellor dashboard -->
+    <string name="db_greeting_format">Hello, %1$s</string>
+    <string name="db_subtitle_format">Your code: %1$s · %2$d of 10 patients</string>
+    <string name="db_section">Requests and patients, flagged first</string>
+    <string name="db_pending">Your account is waiting for approval. You will see requests and patients once it is approved.</string>
+    <string name="db_empty">Nothing here yet. Give your code to the patients you treat.</string>
+    <string name="db_no_checkins">No check-ins yet</string>
+    <string name="db_request_row_format">New request: %1$s · %2$s</string>
+    <string name="db_confirm_title">Confirm %1$s?</string>
+    <string name="db_confirm_msg">Phone: %1$s\n\nOnly confirm if this person is your patient.</string>
+    <string name="db_confirm_yes">Confirm</string>
+    <string name="db_decline">Decline</string>
+    <string name="db_cancel">Cancel</string>
+    <string name="db_full">You already have 10 patients.</string>
+    <string name="db_linked">Patient confirmed</string>
+    <string name="db_declined">Request declined</string>
+    <string name="db_failed">Could not complete that. Please try again.</string>
+    <string name="db_mark_reviewed">Mark reviewed</string>
+    <string name="db_close">Close</string>
+    <string name="db_reviewed_done">Marked as reviewed</string>
+
+    <!-- Flag reasons -->
+    <string name="fl_mood_format">Mood %1$d/5</string>
+    <string name="fl_cravings_high">High cravings</string>
+    <string name="fl_triggered">Triggered with cravings</string>
+    <string name="fl_silent_format">No check-in for %1$d days</string>
+
+    <string name="ck_error_not_linked">You are not connected to a counsellor yet</string>
+    <!-- Menu and pop-ups -->
+    <string name="mn_menu">Menu</string>
+    <string name="mn_refresh">Refresh</string>
+    <string name="mn_about">About Relapse Shield</string>
+    <string name="mn_logout">Log out</string>
+    <string name="mn_about_title">Relapse Shield</string>
+    <string name="mn_about_message">A follow-up app between a patient and their own counsellor. Check-ins and contact details are shared only with that counsellor.\n\nVersion 1.0 · Milestone 2 build</string>
+    <string name="mn_close">Close</string>
+    <string name="mn_checkin_title">Check-in</string>
+
+    <!-- Check-in validation -->
+    <string name="ck_error_note_long">Keep your note under 500 characters</string>
+    <string name="ck_error_cravings_required">Choose how strong your cravings are</string>
+
+    <!-- Patient screen (counsellor side) -->
+    <string name="pt_back">Back</string>
+    <string name="pt_contact_title">Contact details</string>
+    <string name="pt_phone_format">Phone: %1$s</string>
+    <string name="pt_area_format">Home area: %1$s</string>
+    <string name="pt_kin_format">Next of kin: %1$s (%2$s)\n%3$s</string>
+    <string name="pt_call">Call</string>
+    <string name="pt_message">Message</string>
+    <string name="pt_call_kin">Call next of kin</string>
+    <string name="pt_recent">Recent check-ins</string>
+    <string name="pt_mark">Mark reviewed</string>
+    <string name="pt_no_flags">No flags on the latest check-in</string>
+    <string name="pt_flags_format">Flagged: %1$s</string>
+    <string name="pt_msg_body">Hello %1$s, this is your counsellor from Relapse Shield. I wanted to check how you are doing. Please reply when you can.</string>
+    <string name="pt_error_no_app">No app on this phone can do that</string>
+    <string name="pt_error_load">Could not load this patient</string>
+    <string name="pt_reviewed_done">Marked as reviewed</string>
+</resources>
