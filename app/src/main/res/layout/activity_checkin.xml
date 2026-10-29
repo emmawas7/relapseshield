@@ -1,196 +1,176 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/surface"
-    android:fillViewport="true"
+    android:orientation="vertical"
     tools:context=".CheckinActivity">
 
     <LinearLayout
-        android:id="@+id/layoutContent"
+        android:id="@+id/layoutHeader"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:background="@drawable/bg_header"
         android:orientation="vertical"
+        android:paddingStart="24dp"
+        android:paddingTop="16dp"
+        android:paddingEnd="24dp"
         android:paddingBottom="24dp">
 
         <LinearLayout
-            android:id="@+id/layoutHeader"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="@drawable/bg_header"
-            android:gravity="center_horizontal"
-            android:orientation="vertical"
-            android:paddingStart="24dp"
-            android:paddingTop="24dp"
-            android:paddingEnd="24dp"
-            android:paddingBottom="32dp">
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
 
             <TextView
                 android:id="@+id/txtTitle"
-                android:layout_width="wrap_content"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:text="@string/checkin_title"
+                android:layout_weight="1"
+                android:text="@string/ce_title_new"
                 android:textColor="@color/on_primary"
-                android:textSize="26sp"
+                android:textSize="24sp"
                 android:textStyle="bold" />
 
             <TextView
-                android:id="@+id/txtSubtitle"
-                android:layout_width="match_parent"
+                android:id="@+id/txtCancel"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
                 android:gravity="center"
-                android:text="@string/checkin_subtitle"
+                android:minHeight="48dp"
+                android:paddingStart="12dp"
+                android:text="@string/ce_cancel"
                 android:textColor="@color/on_primary"
-                android:textSize="16sp" />
+                android:textSize="16sp"
+                android:textStyle="bold" />
         </LinearLayout>
 
         <TextView
-            android:id="@+id/txtMoodLabel"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginStart="24dp"
-            android:layout_marginTop="28dp"
-            android:layout_marginEnd="24dp"
-            android:text="@string/checkin_mood_label"
-            android:textColor="@color/text_dark"
-            android:textSize="16sp"
-            android:textStyle="bold" />
-
-        <com.google.android.material.slider.Slider
-            android:id="@+id/sliderMood"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:layout_marginEnd="16dp"
-            android:stepSize="1.0"
-            android:value="3.0"
-            android:valueFrom="1.0"
-            android:valueTo="5.0" />
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="24dp"
-            android:layout_marginEnd="24dp"
-            android:text="@string/checkin_mood_hint"
-            android:textColor="@color/text_dark"
-            android:textSize="13sp" />
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="24dp"
-            android:layout_marginTop="24dp"
-            android:layout_marginEnd="24dp"
-            android:text="@string/checkin_cravings_label"
-            android:textColor="@color/text_dark"
-            android:textSize="16sp"
-            android:textStyle="bold" />
-
-        <RadioGroup
-            android:id="@+id/rgCravings"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="20dp"
-            android:layout_marginTop="4dp"
-            android:layout_marginEnd="24dp"
-            android:orientation="vertical">
-
-            <RadioButton
-                android:id="@+id/rbCravNone"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:checked="true"
-                android:minHeight="48dp"
-                android:text="@string/craving_none"
-                android:textColor="@color/text_dark" />
-
-            <RadioButton
-                android:id="@+id/rbCravLow"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:minHeight="48dp"
-                android:text="@string/craving_low"
-                android:textColor="@color/text_dark" />
-
-            <RadioButton
-                android:id="@+id/rbCravMedium"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:minHeight="48dp"
-                android:text="@string/craving_medium"
-                android:textColor="@color/text_dark" />
-
-            <RadioButton
-                android:id="@+id/rbCravHigh"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:minHeight="48dp"
-                android:text="@string/craving_high"
-                android:textColor="@color/text_dark" />
-        </RadioGroup>
-
-        <CheckBox
-            android:id="@+id/chkTriggered"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="20dp"
-            android:layout_marginTop="12dp"
-            android:layout_marginEnd="24dp"
-            android:minHeight="48dp"
-            android:text="@string/checkin_triggered"
-            android:textColor="@color/text_dark"
-            android:textSize="16sp" />
-
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/tilNote"
-            style="?attr/textInputOutlinedStyle"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="24dp"
-            android:layout_marginTop="16dp"
-            android:layout_marginEnd="24dp"
-            android:hint="@string/hint_note"
-            app:counterEnabled="true"
-            app:counterMaxLength="300">
-
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/edtNote"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:gravity="top"
-                android:inputType="textMultiLine|textCapSentences"
-                android:maxLength="300"
-                android:minLines="3"
-                android:textColor="@color/text_dark" />
-        </com.google.android.material.textfield.TextInputLayout>
-
-        <Button
-            android:id="@+id/btnSaveCheckin"
-            android:layout_width="match_parent"
-            android:layout_height="56dp"
-            android:layout_marginStart="24dp"
-            android:layout_marginTop="24dp"
-            android:layout_marginEnd="24dp"
-            android:backgroundTint="@color/primary"
-            android:text="@string/btn_save_checkin"
+            android:text="@string/ce_subtitle"
             android:textColor="@color/on_primary"
             android:textSize="16sp" />
+    </LinearLayout>
 
-        <TextView
-            android:id="@+id/txtCancel"
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <LinearLayout
+            android:id="@+id/layoutContent"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:gravity="center"
-            android:minHeight="48dp"
-            android:text="@string/checkin_cancel"
-            android:textColor="@color/primary"
-            android:textSize="16sp"
-            android:textStyle="bold" />
-    </LinearLayout>
-</ScrollView>
+            android:orientation="vertical"
+            android:padding="24dp">
+
+            <TextView
+                android:id="@+id/txtMoodLabel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="@color/text_dark"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+
+            <com.google.android.material.slider.Slider
+                android:id="@+id/sliderMood"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:contentDescription="@string/ce_mood_description"
+                android:stepSize="1.0"
+                android:value="3.0"
+                android:valueFrom="1.0"
+                android:valueTo="5.0" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="@string/ce_cravings_label"
+                android:textColor="@color/text_dark"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+
+            <RadioGroup
+                android:id="@+id/rgCravings"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <RadioButton
+                    android:id="@+id/rbCravNone"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:checked="true"
+                    android:minHeight="48dp"
+                    android:text="@string/ce_crav_none"
+                    android:textColor="@color/text_dark" />
+
+                <RadioButton
+                    android:id="@+id/rbCravLow"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:minHeight="48dp"
+                    android:text="@string/ce_crav_low"
+                    android:textColor="@color/text_dark" />
+
+                <RadioButton
+                    android:id="@+id/rbCravMedium"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:minHeight="48dp"
+                    android:text="@string/ce_crav_medium"
+                    android:textColor="@color/text_dark" />
+
+                <RadioButton
+                    android:id="@+id/rbCravHigh"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:minHeight="48dp"
+                    android:text="@string/ce_crav_high"
+                    android:textColor="@color/text_dark" />
+            </RadioGroup>
+
+            <CheckBox
+                android:id="@+id/chkTriggered"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:minHeight="48dp"
+                android:text="@string/ce_triggered"
+                android:textColor="@color/text_dark" />
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/tilNote"
+                style="?attr/textInputOutlinedStyle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:hint="@string/ce_hint_note">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/edtNote"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="top"
+                    android:inputType="textMultiLine|textCapSentences"
+                    android:minLines="3"
+                    android:textColor="@color/text_dark" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <Button
+                android:id="@+id/btnSaveCheckin"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:layout_marginTop="24dp"
+                android:backgroundTint="@color/primary"
+                android:text="@string/ce_save"
+                android:textColor="@color/on_primary"
+                android:textSize="16sp" />
+        </LinearLayout>
+    </ScrollView>
+</LinearLayout>

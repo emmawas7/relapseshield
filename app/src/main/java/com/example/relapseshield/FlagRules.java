@@ -81,6 +81,9 @@ public class FlagRules {
                 .append(ctx.getString(R.string.checkin_line_cravings_format, levels[level]));
         if (triggered != null && triggered) {
             sb.append(" · ").append(ctx.getString(R.string.checkin_line_triggered));
+            if (doc.getTimestamp("editedAt") != null) {
+                sb.append(" · ").append(ctx.getString(R.string.ce_edited));
+            }
         }
         if (includeNote && note != null && !note.isEmpty()) {
             sb.append("\n").append(note);
