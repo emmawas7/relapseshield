@@ -74,6 +74,7 @@
                 android:id="@+id/edtEmail"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:autofillHints="emailAddress"
                 android:inputType="textEmailAddress"
                 android:textColor="@color/text_dark" />
         </com.google.android.material.textfield.TextInputLayout>
@@ -96,6 +97,7 @@
                 android:id="@+id/edtPassword"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:autofillHints="password"
                 android:inputType="textPassword"
                 android:textColor="@color/text_dark" />
         </com.google.android.material.textfield.TextInputLayout>
@@ -106,11 +108,27 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="20dp"
             android:layout_marginTop="8dp"
+            android:minHeight="48dp"
             android:text="@string/remember_me"
             android:textColor="@color/text_dark"
             android:textSize="16sp"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/tilPassword" />
+
+        <TextView
+            android:id="@+id/txtForgot"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="24dp"
+            android:gravity="center_vertical"
+            android:minHeight="48dp"
+            android:text="@string/lg_forgot"
+            android:textColor="@color/primary"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            app:layout_constraintBottom_toBottomOf="@id/chkRemember"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="@id/chkRemember" />
 
         <Button
             android:id="@+id/btnLogin"

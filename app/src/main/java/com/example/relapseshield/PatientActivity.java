@@ -1,9 +1,12 @@
 package com.example.relapseshield;
+
+
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.text.TextUtils;
+import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -19,15 +22,18 @@ import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.WriteBatch;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 public class PatientActivity extends AppCompatActivity {
 
-    TextView txtBack, txtPatientName, txtReasons, txtPhone, txtArea, txtKin, txtCheckins;
-    Button btnCall, btnMessage, btnCallKin, btnReviewed;
+    TextView txtBack, txtPatientName, txtReasons, txtPhone, txtArea, txtKin,
+            txtCheckins, txtAlert;
+    Button btnCall, btnMessage, btnCallKin, btnReviewed, btnAlertHandled;
 
     FirebaseAuth auth;
     FirebaseFirestore db;
@@ -63,10 +69,12 @@ public class PatientActivity extends AppCompatActivity {
         txtArea = findViewById(R.id.txtArea);
         txtKin = findViewById(R.id.txtKin);
         txtCheckins = findViewById(R.id.txtCheckins);
+        txtAlert = findViewById(R.id.txtAlert);
         btnCall = findViewById(R.id.btnCall);
         btnMessage = findViewById(R.id.btnMessage);
         btnCallKin = findViewById(R.id.btnCallKin);
         btnReviewed = findViewById(R.id.btnReviewed);
+        btnAlertHandled = findViewById(R.id.btnAlertHandled);
 
         txtPatientName.setText(getIntent().getStringExtra("patientName"));
 
@@ -75,6 +83,7 @@ public class PatientActivity extends AppCompatActivity {
         btnCallKin.setOnClickListener(v -> dial(kinPhone, "call_kin"));
         btnMessage.setOnClickListener(v -> message());
         btnReviewed.setOnClickListener(v -> markReviewed());
+        btnAlertHandled.setOnClickListener(v -> handleAlert());
     }
 
     @Override
@@ -104,7 +113,37 @@ public class PatientActivity extends AppCompatActivity {
                         viewLogged = true;
                         logAccess("view");
                     }
+                    loadAlert();
                     loadCheckins();
+                })
+                .addOnFailureListener(e ->
+                        Toast.makeText(this, R.string.pt_error_load, Toast.LENGTH_LONG).show());
+    }
+
+    // Is there an open alert from this patient? Show it, with a button to close it.
+    private void loadAlert() {
+        db.collection("alerts").document(patientId).get()
+                .addOnSuccessListener(alert -> {
+                    boolean open = alert.exists() && "open".equals(alert.getString("status"));
+                    txtAlert.setVisibility(open ? View.VISIBLE : View.GONE);
+                    btnAlertHandled.setVisibility(open ? View.VISIBLE : View.GONE);
+                    if (open) {
+                        Timestamp t = alert.getTimestamp("createdAt");
+                        String when = (t == null) ? "" : new SimpleDateFormat("EEE d MMM, HH:mm",
+                                Locale.getDefault()).format(t.toDate());
+                        txtAlert.setText(getString(R.string.pt_alert_format, when));
+                    }
+                });
+    }
+
+    private void handleAlert() {
+        Map<String, Object> update = new HashMap<>();
+        update.put("status", "handled");
+        update.put("handledAt", FieldValue.serverTimestamp());
+        db.collection("alerts").document(patientId).update(update)
+                .addOnSuccessListener(v -> {
+                    Toast.makeText(this, R.string.pt_alert_done, Toast.LENGTH_SHORT).show();
+                    loadAlert();
                 })
                 .addOnFailureListener(e ->
                         Toast.makeText(this, R.string.pt_error_load, Toast.LENGTH_LONG).show());

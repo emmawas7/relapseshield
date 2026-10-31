@@ -1,16 +1,13 @@
 package com.example.relapseshield;
-
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.view.View;
 import android.widget.Button;
-import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowInsetsCompat;
-import android.content.Intent;
+
+import com.google.firebase.auth.FirebaseAuth;
 
 public class WelcomeActivity extends AppCompatActivity {
 
@@ -20,31 +17,27 @@ public class WelcomeActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
+
+        // Remember me: Firebase keeps the user signed in on this phone. If they asked to be
+        // remembered, go straight in; if not, sign them out and ask for the password again.
+        FirebaseAuth auth = FirebaseAuth.getInstance();
+        SharedPreferences prefs = getSharedPreferences("relapse_prefs", MODE_PRIVATE);
+        if (auth.getCurrentUser() != null) {
+            if (prefs.getBoolean("remember", false)) {
+                startActivity(new Intent(this, HomeActivity.class));
+                finish();
+                return;
+            }
+            auth.signOut();
+        }
+
         setContentView(R.layout.activity_welcome);
+        ScreenInsets.apply(findViewById(R.id.main), findViewById(R.id.layoutHeader),
+                findViewById(R.id.layoutContent));
 
-
-        // Keep the header behind the status bar and the content clear of the navigation bar
-        View root = findViewById(R.id.main);
-        View header = findViewById(R.id.layoutHeader);
-        View content = findViewById(R.id.layoutContent);
-        int headerTop = header.getPaddingTop();
-        int contentBottom = content.getPaddingBottom();
-
-        ViewCompat.setOnApplyWindowInsetsListener(root, (v, insets) -> {
-            Insets bars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            v.setPadding(bars.left, 0, bars.right, 0);
-            header.setPadding(header.getPaddingLeft(), headerTop + bars.top,
-                    header.getPaddingRight(), header.getPaddingBottom());
-            content.setPadding(content.getPaddingLeft(), content.getPaddingTop(),
-                    content.getPaddingRight(), contentBottom + bars.bottom);
-            return insets;
-        });
-
-        // Connect the buttons to the layout by their IDs
         btnRegister = findViewById(R.id.btnRegister);
         btnLogin = findViewById(R.id.btnLogin);
 
-        // Placeholders until RegisterActivity and LoginActivity exist
         btnRegister.setOnClickListener(v ->
                 startActivity(new Intent(WelcomeActivity.this, RegisterActivity.class)));
         btnLogin.setOnClickListener(v ->

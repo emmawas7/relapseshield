@@ -60,6 +60,27 @@
             android:padding="24dp">
 
             <TextView
+                android:id="@+id/txtAlert"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:textColor="@color/error_red"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:visibility="gone" />
+
+            <Button
+                android:id="@+id/btnAlertHandled"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:layout_marginBottom="24dp"
+                android:backgroundTint="@color/error_red"
+                android:text="@string/pt_alert_handled"
+                android:textColor="@color/on_primary"
+                android:textSize="16sp"
+                android:visibility="gone" />
+
+            <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="@string/pt_contact_title"

@@ -1,14 +1,14 @@
 package com.example.relapseshield;
 import android.content.Intent;
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
+import android.widget.PopupMenu;
 import android.widget.TextView;
 import android.widget.Toast;
-import android.text.TextUtils;
-import android.widget.PopupMenu;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AlertDialog;
@@ -17,6 +17,7 @@ import androidx.core.content.ContextCompat;
 
 import com.google.android.gms.tasks.Task;
 import com.google.android.gms.tasks.Tasks;
+import com.google.firebase.Timestamp;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.DocumentReference;
@@ -25,11 +26,12 @@ import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreException;
 import com.google.firebase.firestore.QuerySnapshot;
-import com.google.firebase.firestore.WriteBatch;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 public class DashboardActivity extends AppCompatActivity {
@@ -41,9 +43,9 @@ public class DashboardActivity extends AppCompatActivity {
     FirebaseFirestore db;
     String myName = "";
 
-    // One list row: either a request to confirm, or a confirmed patient
+    // One list row: an urgent alert, a request to confirm, or a confirmed patient
     static class Row {
-        boolean isRequest;
+        boolean isAlert, isRequest;
         String id, name, phone, line;
         List<String> reasons = new ArrayList<>();
         List<DocumentSnapshot> checkins = new ArrayList<>(); // newest first
@@ -71,7 +73,7 @@ public class DashboardActivity extends AppCompatActivity {
         txtEmpty = findViewById(R.id.txtEmpty);
         lstPatients = findViewById(R.id.lstPatients);
 
-        // Flagged patients show in red, requests in teal
+        // Urgent alerts and flagged patients show in red, requests in teal
         adapter = new ArrayAdapter<String>(this, R.layout.item_checkin, R.id.txtItem, lines) {
             @Override
             public View getView(int position, View convertView, ViewGroup parent) {
@@ -80,10 +82,10 @@ public class DashboardActivity extends AppCompatActivity {
                 int color = R.color.text_dark;
                 if (position < rows.size()) {
                     Row r = rows.get(position);
-                    if (r.isRequest) {
-                        color = R.color.primary;
-                    } else if (!r.reasons.isEmpty()) {
+                    if (r.isAlert || (!r.isRequest && !r.reasons.isEmpty())) {
                         color = R.color.error_red;
+                    } else if (r.isRequest) {
+                        color = R.color.primary;
                     }
                 }
                 t.setTextColor(ContextCompat.getColor(getContext(), color));
@@ -138,8 +140,10 @@ public class DashboardActivity extends AppCompatActivity {
                         Toast.makeText(this, R.string.error_load_checkins, Toast.LENGTH_LONG).show());
     }
 
-    // Three questions, all limited to this counsellor: who is asking, who is mine, what did they log
+    // Four questions, all limited to this counsellor: alerts, requests, patients, check-ins
     private void loadRows(String myId) {
+        Task<QuerySnapshot> alertTask =
+                db.collection("alerts").whereEqualTo("counsellorId", myId).get();
         Task<QuerySnapshot> reqTask =
                 db.collection("requests").whereEqualTo("counsellorId", myId).get();
         Task<QuerySnapshot> patTask =
@@ -147,10 +151,32 @@ public class DashboardActivity extends AppCompatActivity {
         Task<QuerySnapshot> chkTask =
                 db.collection("checkins").whereEqualTo("counsellorId", myId).get();
 
-        Tasks.whenAllSuccess(reqTask, patTask, chkTask).addOnSuccessListener(results -> {
-            QuerySnapshot requests = (QuerySnapshot) results.get(0);
-            QuerySnapshot patients = (QuerySnapshot) results.get(1);
-            QuerySnapshot checkins = (QuerySnapshot) results.get(2);
+        Tasks.whenAllSuccess(alertTask, reqTask, patTask, chkTask).addOnSuccessListener(results -> {
+            QuerySnapshot alerts = (QuerySnapshot) results.get(0);
+            QuerySnapshot requests = (QuerySnapshot) results.get(1);
+            QuerySnapshot patients = (QuerySnapshot) results.get(2);
+            QuerySnapshot checkins = (QuerySnapshot) results.get(3);
+
+            // Urgent alerts first, newest on top
+            List<DocumentSnapshot> openAlerts = new ArrayList<>();
+            for (DocumentSnapshot a : alerts.getDocuments()) {
+                if ("open".equals(a.getString("status"))) {
+                    openAlerts.add(a);
+                }
+            }
+            openAlerts.sort(FlagRules::newestFirst);
+            ArrayList<Row> alertRows = new ArrayList<>();
+            for (DocumentSnapshot a : openAlerts) {
+                Row row = new Row();
+                row.isAlert = true;
+                row.id = a.getId();
+                row.name = a.getString("patientName");
+                Timestamp t = a.getTimestamp("createdAt");
+                String when = (t == null) ? "" : new SimpleDateFormat("EEE d MMM, HH:mm",
+                        Locale.getDefault()).format(t.toDate());
+                row.line = getString(R.string.db_alert_row_format, row.name, when);
+                alertRows.add(row);
+            }
 
             Map<String, List<DocumentSnapshot>> byPatient = new HashMap<>();
             for (DocumentSnapshot c : checkins.getDocuments()) {
@@ -202,6 +228,7 @@ public class DashboardActivity extends AppCompatActivity {
             });
 
             rows.clear();
+            rows.addAll(alertRows);
             rows.addAll(requestRows);
             rows.addAll(patientRows);
             lines.clear();
@@ -280,13 +307,14 @@ public class DashboardActivity extends AppCompatActivity {
                         Toast.makeText(this, R.string.db_failed, Toast.LENGTH_LONG).show());
     }
 
-    // Temporary: a simple pop-up. The full patient screen replaces this in the next part.
+    // Alerts and patients both open the patient screen
     private void showPatient(Row row) {
         Intent intent = new Intent(DashboardActivity.this, PatientActivity.class);
         intent.putExtra("patientId", row.id);
         intent.putExtra("patientName", row.name);
         startActivity(intent);
     }
+
     // The app-wide menu
     private void showMenu(View anchor) {
         PopupMenu menu = new PopupMenu(this, anchor);
@@ -297,52 +325,23 @@ public class DashboardActivity extends AppCompatActivity {
                 loadAll();
                 return true;
             } else if (id == R.id.action_about) {
-                showAbout();
+                new AlertDialog.Builder(this)
+                        .setTitle(R.string.mn_about_title)
+                        .setMessage(R.string.mn_about_message)
+                        .setPositiveButton(R.string.mn_close, null)
+                        .show();
                 return true;
             } else if (id == R.id.action_logout) {
-                logout();
+                auth.signOut();
+                Toast.makeText(this, R.string.toast_logged_out, Toast.LENGTH_SHORT).show();
+                Intent intent = new Intent(DashboardActivity.this, WelcomeActivity.class);
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                startActivity(intent);
                 return true;
             }
             return false;
         });
         menu.show();
-    }
-
-    private void showAbout() {
-        new AlertDialog.Builder(this)
-                .setTitle(R.string.mn_about_title)
-                .setMessage(R.string.mn_about_message)
-                .setPositiveButton(R.string.mn_close, null)
-                .show();
-    }
-
-    private void logout() {
-        auth.signOut();
-        Toast.makeText(this, R.string.toast_logged_out, Toast.LENGTH_SHORT).show();
-        Intent intent = new Intent(DashboardActivity.this, WelcomeActivity.class);
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-        startActivity(intent);
-    }
-
-    private void markReviewed(Row row) {
-        WriteBatch batch = db.batch();
-        int changes = 0;
-        for (DocumentSnapshot c : row.checkins) {
-            if (!Boolean.TRUE.equals(c.getBoolean("reviewed"))) {
-                batch.update(c.getReference(), "reviewed", true);
-                changes++;
-            }
-        }
-        if (changes == 0) {
-            return;
-        }
-        batch.commit()
-                .addOnSuccessListener(v -> {
-                    Toast.makeText(this, R.string.db_reviewed_done, Toast.LENGTH_SHORT).show();
-                    loadAll();
-                })
-                .addOnFailureListener(e ->
-                        Toast.makeText(this, R.string.db_failed, Toast.LENGTH_LONG).show());
     }
 
     private void showMessage(String message) {

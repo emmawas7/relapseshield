@@ -21,6 +21,14 @@
     <string name="hint_email">Email address</string>
     <string name="hint_password">Password</string>
     <string name="remember_me">Remember me</string>
+    <string name="forgot_password">Forgot password?</string>
+    <string name="forgot_password_title">Reset password</string>
+    <string name="forgot_password_message">Enter your registered email address to receive a password reset link.</string>
+    <string name="btn_send_reset">Send link</string>
+    <string name="btn_cancel">Cancel</string>
+    <string name="forgot_password_success">Reset link sent to %1$s. Check your email inbox.</string>
+    <string name="error_user_not_found">No account found with this email address.</string>
+    <string name="error_reset_failed">Could not send password reset email. Please try again.</string>
     <string name="btn_login_submit">Log in</string>
     <string name="login_register_prompt">New here? Create an account</string>
 
@@ -223,4 +231,64 @@
     <string name="ce_delete_yes">Delete</string>
     <string name="ce_deleted">Check-in deleted</string>
     <string name="ce_delete_failed">Could not delete. Please try again.</string>
+    <!-- Emergency (patient) -->
+    <string name="em_title">Support right now</string>
+    <string name="em_back">Back</string>
+    <string name="em_subtitle">You are not alone. Take it one minute at a time.</string>
+    <string name="em_danger_title">In immediate danger?</string>
+    <string name="em_danger_text">Call the emergency services now.</string>
+    <string name="em_number">711</string>
+    <string name="em_call_format">Call %1$s</string>
+    <string name="em_breath_title">Lets relieve your anxiety</string>
+    <string name="em_breath_hint">Breathe in and out at the count.</string>
+    <string name="em_breath_start">Start exercise (1 minute)</string>
+    <string name="em_breath_again">Repeat exercise</string>
+
+    <string name="em_breathe_in">Breathe in</string>
+    <string name="em_breathe_out">Breathe out</string>
+    <string name="em_breath_format">%1$s\n%2$d s left</string>
+    <string name="em_breath_done">Well done. If the urge is still strong, alert your counsellor below.</string>
+    <string name="em_tips_title">While the urge passes:</string>
+    <string name="em_tips">• Drink some water.\n• Move away from where the urge started: step outside or change room.\n• Wait 10 minutes. Urges rise and then pass.\n• Be near a person you can trust.</string>
+    <string name="em_alert_title">Tell your counsellor</string>
+    <string name="em_alert_hint">Your counsellor will see this at the top of their list and reach out to you.</string>
+    <string name="em_alert_button">Alert my counsellor</string>
+    <string name="em_alerted_format">Your counsellor was alerted at %1$s. They will reach out to you as soon as possible.</string>
+    <string name="em_alert_sent">Your counsellor has been alerted</string>
+    <string name="em_alert_failed">Could not send the alert. If you are in danger, call the emergency services.</string>
+    <string name="em_already">Your counsellor has already been alerted</string>
+    <string name="em_no_dialler">No dialler available on this phone</string>
+
+    <!-- Emergency (counsellor) -->
+    <string name="db_alert_row_format">URGENT · %1$s asked for help\n%2$s</string>
+    <string name="pt_alert_format">This patient asked for help at %1$s</string>
+    <string name="pt_alert_handled">Mark alert handled</string>
+    <string name="pt_alert_done">Alert marked as handled</string>
+    <string name="em_step_1">Step 1 · Slow your breathing</string>
+    <string name="em_step_2">Step 2 · Tell your counsellor</string>
+    <string name="em_breath_intro">One minute: breathe in for 4 seconds, breathe out for 6 seconds.</string>
+    <string name="em_breath_ready">Ready when you are</string>
+    <string name="em_hold">Hold your breath</string>
+    <string name="em_circle_format">%1$s · %2$ds</string>
+    <string name="em_total_left_format">%1$d seconds left</string>
+    <string name="em_alert_locked">Finish the breathing exercise to unlock this step.</string>
+    <string name="em_alert_unlocked">You finished the exercise. If the urge is still strong, you can alert your counsellor.</string>
+    <string name="em_alert_locked_toast">Please finish the breathing exercise first</string>
+    <string name="lg_forgot">Forgot password?</string>
+    <string name="lg_reset_title">Reset your password</string>
+    <string name="lg_reset_text">Enter the email you registered with. We will send you a link to choose a new password.</string>
+    <string name="lg_reset_send">Send link</string>
+    <string name="lg_reset_cancel">Cancel</string>
+    <string name="lg_reset_sent">If an account exists for that email, a reset link is on its way. Check your inbox and your spam folder.</string>
+    <string name="lg_reset_failed">Could not send the link. Check your connection and try again.</string>
+    <string name="lg_error_too_many">Too many attempts. Please wait a few minutes and try again.</string>
+    <string name="lg_error_profile">Could not load your profile. Please try again.</string>
+    <string name="da_menu">Delete my account</string>
+    <string name="da_title">Delete your account?</string>
+    <string name="da_message">This permanently deletes your profile, check-ins and alerts, and removes you from your counsellor\'s list. It cannot be undone. Enter your password to confirm.</string>
+    <string name="da_confirm">Delete everything</string>
+    <string name="da_wrong_password">That password is not correct</string>
+    <string name="da_failed">Could not delete your account. Please try again.</string>
+    <string name="da_done">Your account and data have been deleted</string>
+    <string name="rm_account_removed">This account has been removed. Please contact your centre if this is a mistake.</string>
 </resources>

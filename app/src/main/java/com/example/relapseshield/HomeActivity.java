@@ -1,6 +1,8 @@
 package com.example.relapseshield;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
@@ -13,10 +15,20 @@ import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.google.android.gms.tasks.Task;
+import com.google.android.gms.tasks.Tasks;
+import com.google.android.material.textfield.TextInputEditText;
+import com.google.android.material.textfield.TextInputLayout;
+import com.google.firebase.auth.AuthCredential;
+import com.google.firebase.auth.EmailAuthProvider;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.QuerySnapshot;
+import com.google.firebase.firestore.WriteBatch;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -72,11 +84,8 @@ public class HomeActivity extends AppCompatActivity {
 
         btnNewCheckin.setOnClickListener(v ->
                 startActivity(new Intent(HomeActivity.this, CheckinActivity.class)));
-
-        // Placeholder until the Emergency screen is built
         btnEmergency.setOnClickListener(v ->
-                Toast.makeText(HomeActivity.this, R.string.toast_emergency_soon,
-                        Toast.LENGTH_SHORT).show());
+                startActivity(new Intent(HomeActivity.this, EmergencyActivity.class)));
 
         txtLogout.setText(R.string.mn_menu);
         txtLogout.setOnClickListener(v -> showMenu(v));
@@ -98,6 +107,15 @@ public class HomeActivity extends AppCompatActivity {
         }
         db.collection("users").document(user.getUid()).get()
                 .addOnSuccessListener(doc -> {
+                    // Remembered session, but an administrator has removed the profile
+                    if (!doc.exists()) {
+                        auth.signOut();
+                        Toast.makeText(HomeActivity.this, R.string.rm_account_removed,
+                                Toast.LENGTH_LONG).show();
+                        goToWelcome();
+                        return;
+                    }
+
                     String role = doc.getString("role");
                     if ("counsellor".equals(role)) {
                         startActivity(new Intent(HomeActivity.this, DashboardActivity.class));
@@ -111,7 +129,6 @@ public class HomeActivity extends AppCompatActivity {
                     }
                 });
     }
-
     private void loadCheckins() {
         FirebaseUser user = auth.getCurrentUser();
         if (user == null) {
@@ -197,17 +214,137 @@ public class HomeActivity extends AppCompatActivity {
                         .setPositiveButton(R.string.mn_close, null)
                         .show();
                 return true;
+            } else if (id == R.id.action_delete_account) {
+                confirmDeleteAccount();
+                return true;
             } else if (id == R.id.action_logout) {
                 auth.signOut();
                 Toast.makeText(HomeActivity.this, R.string.toast_logged_out,
                         Toast.LENGTH_SHORT).show();
-                Intent intent = new Intent(HomeActivity.this, WelcomeActivity.class);
-                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                startActivity(intent);
+                goToWelcome();
                 return true;
             }
             return false;
         });
         menu.show();
+    }
+
+    private void goToWelcome() {
+        Intent intent = new Intent(HomeActivity.this, WelcomeActivity.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        startActivity(intent);
+    }
+
+    // ---- Delete my account: ask for the password first, then remove everything ----
+
+    private void confirmDeleteAccount() {
+        View view = getLayoutInflater().inflate(R.layout.dialog_password, null);
+        TextInputLayout til = view.findViewById(R.id.tilDelPassword);
+        TextInputEditText edt = view.findViewById(R.id.edtDelPassword);
+
+        AlertDialog dialog = new AlertDialog.Builder(this)
+                .setTitle(R.string.da_title)
+                .setMessage(R.string.da_message)
+                .setView(view)
+                .setPositiveButton(R.string.da_confirm, null)
+                .setNegativeButton(R.string.ce_cancel, null)
+                .create();
+        dialog.show();
+
+        // Set the click here so the pop-up stays open if the password is empty
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
+            String password = String.valueOf(edt.getText());
+            til.setError(null);
+            if (password.isEmpty()) {
+                til.setError(getString(R.string.error_password_required));
+                return;
+            }
+            dialog.dismiss();
+            reauthenticateAndDelete(password);
+        });
+    }
+
+    // Firebase wants a fresh login before it will delete an account
+    private void reauthenticateAndDelete(String password) {
+        FirebaseUser user = auth.getCurrentUser();
+        if (user == null || user.getEmail() == null) {
+            return;
+        }
+        AuthCredential credential = EmailAuthProvider.getCredential(user.getEmail(), password);
+        user.reauthenticate(credential)
+                .addOnSuccessListener(r -> deleteEverything(user))
+                .addOnFailureListener(e ->
+                        Toast.makeText(this, R.string.da_wrong_password, Toast.LENGTH_LONG).show());
+    }
+
+    // Order matters: check-ins, then alert, request, count and profile in one batch,
+    // and the login last. If any step fails, the rest is not attempted.
+    private void deleteEverything(FirebaseUser user) {
+        String uid = user.getUid();
+        DocumentReference profileRef = db.collection("users").document(uid);
+        DocumentReference alertRef = db.collection("alerts").document(uid);
+        DocumentReference requestRef = db.collection("requests").document(uid);
+
+        Task<DocumentSnapshot> profileTask = profileRef.get();
+        Task<DocumentSnapshot> alertTask = alertRef.get();
+        Task<DocumentSnapshot> requestTask = requestRef.get();
+        Task<QuerySnapshot> checkinTask =
+                db.collection("checkins").whereEqualTo("userId", uid).get();
+
+        Tasks.whenAllSuccess(profileTask, alertTask, requestTask, checkinTask)
+                .addOnSuccessListener(results -> {
+                    DocumentSnapshot profile = (DocumentSnapshot) results.get(0);
+                    DocumentSnapshot alert = (DocumentSnapshot) results.get(1);
+                    DocumentSnapshot request = (DocumentSnapshot) results.get(2);
+                    QuerySnapshot checkins = (QuerySnapshot) results.get(3);
+
+                    // 1. Check-ins, in groups of up to 400 (one batch holds at most 500 writes)
+                    List<DocumentSnapshot> docs = checkins.getDocuments();
+                    List<Task<Void>> groups = new ArrayList<>();
+                    for (int i = 0; i < docs.size(); i += 400) {
+                        WriteBatch batch = db.batch();
+                        for (int j = i; j < Math.min(i + 400, docs.size()); j++) {
+                            batch.delete(docs.get(j).getReference());
+                        }
+                        groups.add(batch.commit());
+                    }
+
+                    // 2. Everything else, in one batch: all of it happens or none of it does
+                    WriteBatch rest = db.batch();
+                    if (alert.exists()) {
+                        rest.delete(alertRef);
+                    }
+                    if (request.exists()) {
+                        rest.delete(requestRef);
+                    }
+                    String counsellorId = profile.getString("counsellorId");
+                    if (counsellorId != null) {
+                        rest.update(db.collection("users").document(counsellorId),
+                                "clientCount", FieldValue.increment(-1));
+                    }
+                    rest.delete(profileRef);
+
+                    Tasks.whenAll(groups)
+                            .onSuccessTask(x -> rest.commit())
+                            .onSuccessTask(x -> user.delete())
+                            .addOnSuccessListener(x -> finishDeletion())
+                            .addOnFailureListener(e -> {
+                                Log.e("DeleteAccount", "Deleting the account failed", e);
+                                Toast.makeText(this, R.string.da_failed,
+                                        Toast.LENGTH_LONG).show();
+                            });
+                })
+                .addOnFailureListener(e -> {
+                    Log.e("DeleteAccount", "Could not read the data to delete", e);
+                    Toast.makeText(this, R.string.da_failed, Toast.LENGTH_LONG).show();
+                });
+    }
+
+    private void finishDeletion() {
+        SharedPreferences prefs = getSharedPreferences("relapse_prefs", MODE_PRIVATE);
+        prefs.edit().clear().apply();
+        auth.signOut();
+        Toast.makeText(this, R.string.da_done, Toast.LENGTH_LONG).show();
+        goToWelcome();
     }
 }
