@@ -27,6 +27,7 @@ import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.QuerySnapshot;
 import com.google.firebase.firestore.WriteBatch;
 
@@ -41,6 +42,7 @@ public class HomeActivity extends AppCompatActivity {
 
     FirebaseAuth auth;
     FirebaseFirestore db;
+    ListenerRegistration checkinListener;
 
     // Three parallel lists: the row text, the longer text for the pop-up, and the document ID
     final ArrayList<String> items = new ArrayList<>();
@@ -75,7 +77,7 @@ public class HomeActivity extends AppCompatActivity {
         adapter = new ArrayAdapter<>(this, R.layout.item_checkin, R.id.txtItem, items);
         lstCheckins.setAdapter(adapter);
 
-        // Tapping a row opens a pop-up with the full record, and Edit and Delete
+        // Tapping a row opens a pop-up with the full record and Edit, Delete and Close buttons
         lstCheckins.setOnItemClickListener((parent, view, position, id) -> {
             if (position < ids.size() && ids.get(position) != null) {
                 showCheckin(position);
@@ -89,14 +91,22 @@ public class HomeActivity extends AppCompatActivity {
 
         txtLogout.setText(R.string.mn_menu);
         txtLogout.setOnClickListener(v -> showMenu(v));
+
+        // Checked once when Home opens, not every time it comes back to the front
+        routeByProfile();
     }
 
-    // Reload each time Home comes back to the front, so changes appear straight away
+    // The live list runs only while Home is on screen
     @Override
-    protected void onResume() {
-        super.onResume();
-        routeByProfile();
-        loadCheckins();
+    protected void onStart() {
+        super.onStart();
+        startListening();
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        stopListening();
     }
 
     // Counsellors go to their dashboard; patients not yet linked go to the connect screen
@@ -129,54 +139,80 @@ public class HomeActivity extends AppCompatActivity {
                     }
                 });
     }
-    private void loadCheckins() {
+
+    // A live listener: it shows what is saved on the phone at once, then keeps the list
+    // up to date, so edits, deletes and new check-ins appear without reloading
+    private void startListening() {
         FirebaseUser user = auth.getCurrentUser();
-        if (user == null) {
+        if (user == null || checkinListener != null) {
             return;
         }
-        db.collection("checkins").whereEqualTo("userId", user.getUid()).get()
-                .addOnSuccessListener(snapshot -> {
-                    List<DocumentSnapshot> docs = new ArrayList<>(snapshot.getDocuments());
-                    docs.sort(FlagRules::newestFirst);
-
-                    items.clear();
-                    details.clear();
-                    ids.clear();
-                    int shown = 0;
-                    for (DocumentSnapshot doc : docs) {
-                        if (shown == 20) {
-                            break;
-                        }
-                        items.add(FlagRules.describe(this, doc, false));
-                        details.add(FlagRules.describe(this, doc, true));
-                        ids.add(doc.getId());
-                        shown++;
+        checkinListener = db.collection("checkins").whereEqualTo("userId", user.getUid())
+                .addSnapshotListener((snapshot, error) -> {
+                    if (error != null) {
+                        Log.e("Home", "Could not listen to check-ins", error);
+                        return;
                     }
-                    if (items.isEmpty()) {
-                        items.add(getString(R.string.home_no_checkins));
-                        details.add(getString(R.string.home_no_checkins));
-                        ids.add(null);
+                    if (snapshot != null) {
+                        showCheckins(new ArrayList<>(snapshot.getDocuments()));
                     }
-                    adapter.notifyDataSetChanged();
-                })
-                .addOnFailureListener(e ->
-                        Toast.makeText(this, R.string.error_load_checkins,
-                                Toast.LENGTH_LONG).show());
+                });
     }
 
+    private void stopListening() {
+        if (checkinListener != null) {
+            checkinListener.remove();
+            checkinListener = null;
+        }
+    }
+
+    private void showCheckins(List<DocumentSnapshot> docs) {
+        docs.sort(FlagRules::newestFirst);
+
+        items.clear();
+        details.clear();
+        ids.clear();
+        int shown = 0;
+        for (DocumentSnapshot doc : docs) {
+            if (shown == 20) {
+                break;
+            }
+            items.add(FlagRules.describe(this, doc, false));
+            details.add(FlagRules.describe(this, doc, true));
+            ids.add(doc.getId());
+            shown++;
+        }
+        if (items.isEmpty()) {
+            items.add(getString(R.string.home_no_checkins));
+            details.add(getString(R.string.home_no_checkins));
+            ids.add(null);
+        }
+        adapter.notifyDataSetChanged();
+    }
+
+    // The pop-up with real buttons, so the options are easy to see
     private void showCheckin(int position) {
         String id = ids.get(position);
-        new AlertDialog.Builder(this)
+        View view = getLayoutInflater().inflate(R.layout.dialog_checkin, null);
+        ((TextView) view.findViewById(R.id.txtDetails)).setText(details.get(position));
+
+        AlertDialog dialog = new AlertDialog.Builder(this)
                 .setTitle(R.string.mn_checkin_title)
-                .setMessage(details.get(position))
-                .setPositiveButton(R.string.ce_edit, (d, w) -> {
-                    Intent intent = new Intent(HomeActivity.this, CheckinActivity.class);
-                    intent.putExtra("checkinId", id);
-                    startActivity(intent);
-                })
-                .setNegativeButton(R.string.ce_delete, (d, w) -> confirmDelete(id))
-                .setNeutralButton(R.string.mn_close, null)
-                .show();
+                .setView(view)
+                .create();
+
+        view.findViewById(R.id.btnDlgEdit).setOnClickListener(v -> {
+            dialog.dismiss();
+            Intent intent = new Intent(HomeActivity.this, CheckinActivity.class);
+            intent.putExtra("checkinId", id);
+            startActivity(intent);
+        });
+        view.findViewById(R.id.btnDlgDelete).setOnClickListener(v -> {
+            dialog.dismiss();
+            confirmDelete(id);
+        });
+        view.findViewById(R.id.btnDlgClose).setOnClickListener(v -> dialog.dismiss());
+        dialog.show();
     }
 
     // Always ask before deleting
@@ -189,12 +225,11 @@ public class HomeActivity extends AppCompatActivity {
                 .show();
     }
 
+    // The live list updates by itself once the delete is done
     private void deleteCheckin(String id) {
         db.collection("checkins").document(id).delete()
-                .addOnSuccessListener(v -> {
-                    Toast.makeText(this, R.string.ce_deleted, Toast.LENGTH_SHORT).show();
-                    loadCheckins();
-                })
+                .addOnSuccessListener(v ->
+                        Toast.makeText(this, R.string.ce_deleted, Toast.LENGTH_SHORT).show())
                 .addOnFailureListener(e ->
                         Toast.makeText(this, R.string.ce_delete_failed, Toast.LENGTH_LONG).show());
     }
@@ -205,7 +240,8 @@ public class HomeActivity extends AppCompatActivity {
         menu.setOnMenuItemClickListener(item -> {
             int id = item.getItemId();
             if (id == R.id.action_refresh) {
-                loadCheckins();
+                stopListening();
+                startListening();
                 return true;
             } else if (id == R.id.action_about) {
                 new AlertDialog.Builder(HomeActivity.this)
@@ -251,7 +287,6 @@ public class HomeActivity extends AppCompatActivity {
                 .create();
         dialog.show();
 
-        // Set the click here so the pop-up stays open if the password is empty
         dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
             String password = String.valueOf(edt.getText());
             til.setError(null);
@@ -280,6 +315,7 @@ public class HomeActivity extends AppCompatActivity {
     // Order matters: check-ins, then alert, request, count and profile in one batch,
     // and the login last. If any step fails, the rest is not attempted.
     private void deleteEverything(FirebaseUser user) {
+        stopListening();
         String uid = user.getUid();
         DocumentReference profileRef = db.collection("users").document(uid);
         DocumentReference alertRef = db.collection("alerts").document(uid);

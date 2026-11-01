@@ -189,7 +189,7 @@
     <string name="ck_error_cravings_required">Choose how strong your cravings are</string>
 
     <!-- Patient screen (counsellor side) -->
-    <string name="pt_back">Back</string>
+    <string name="pt_back">&lt; Back</string>
     <string name="pt_contact_title">Contact details</string>
     <string name="pt_phone_format">Phone: %1$s</string>
     <string name="pt_area_format">Home area: %1$s</string>
@@ -233,7 +233,7 @@
     <string name="ce_delete_failed">Could not delete. Please try again.</string>
     <!-- Emergency (patient) -->
     <string name="em_title">Support right now</string>
-    <string name="em_back">Back</string>
+    <string name="em_back">&lt; Back</string>
     <string name="em_subtitle">You are not alone. Take it one minute at a time.</string>
     <string name="em_danger_title">In immediate danger?</string>
     <string name="em_danger_text">Call the emergency services now.</string>
@@ -294,7 +294,7 @@
     <!-- Flag words -->
     <string name="fw_menu">Flag words</string>
     <string name="fw_title">Flag words</string>
-    <string name="fw_back">Back</string>
+    <string name="fw_back">&lt; Back</string>
     <string name="fw_subtitle">Words in a patient\'s note that raise a check-in for your attention. You decide the list.</string>
     <string name="fw_empty">No words yet. Add your own, or start from the suggested list.</string>
     <string name="fw_add">Add word</string>
@@ -324,4 +324,5 @@
     <string name="fw_help_message">What you wrote sounds serious. Your counsellor has been told and will reach out to you. If you are in danger right now, call the emergency services.</string>
     <string name="fw_help_support">Support steps</string>
     <string name="fw_help_close">Close</string>
+    <string name="pt_still_loading">The contact details are still loading. Try again in a moment.</string>
 </resources>

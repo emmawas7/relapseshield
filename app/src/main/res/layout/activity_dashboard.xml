@@ -44,7 +44,9 @@
                 android:text="@string/home_logout"
                 android:textColor="@color/on_primary"
                 android:textSize="16sp"
-                android:textStyle="bold" />
+                android:textStyle="bold"
+                android:drawableEnd="@drawable/ic_arrow_down"
+                android:drawablePadding="4dp"/>
         </LinearLayout>
 
         <TextView

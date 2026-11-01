@@ -115,33 +115,25 @@ public class DashboardActivity extends AppCompatActivity {
         super.onResume();
         loadAll();
     }
+    // Fills the header from the counsellor's own profile
+    private void showHeader(DocumentSnapshot profile) {
+        myName = profile.getString("name") == null ? "" : profile.getString("name");
+        Long count = profile.getLong("clientCount");
+        String code = profile.getString("code");
+        txtGreeting.setText(getString(R.string.db_greeting_format, myName));
+        txtSubtitle.setText(getString(R.string.db_subtitle_format,
+                code == null ? "" : code, count == null ? 0 : count.intValue()));
+    }
 
+    // Everything is requested at once, so the screen waits for one round trip, not two
     private void loadAll() {
         FirebaseUser me = auth.getCurrentUser();
         if (me == null) {
             return;
         }
-        db.collection("users").document(me.getUid()).get()
-                .addOnSuccessListener(profile -> {
-                    myName = profile.getString("name") == null ? "" : profile.getString("name");
-                    Long count = profile.getLong("clientCount");
-                    String code = profile.getString("code");
-                    txtGreeting.setText(getString(R.string.db_greeting_format, myName));
-                    txtSubtitle.setText(getString(R.string.db_subtitle_format,
-                            code == null ? "" : code, count == null ? 0 : count.intValue()));
+        String myId = me.getUid();
 
-                    if (!Boolean.TRUE.equals(profile.getBoolean("approved"))) {
-                        showMessage(getString(R.string.db_pending));
-                        return;
-                    }
-                    loadRows(me.getUid());
-                })
-                .addOnFailureListener(e ->
-                        Toast.makeText(this, R.string.error_load_checkins, Toast.LENGTH_LONG).show());
-    }
-
-    // Four questions, all limited to this counsellor: alerts, requests, patients, check-ins
-    private void loadRows(String myId) {
+        Task<DocumentSnapshot> profileTask = db.collection("users").document(myId).get();
         Task<QuerySnapshot> alertTask =
                 db.collection("alerts").whereEqualTo("counsellorId", myId).get();
         Task<QuerySnapshot> reqTask =
@@ -151,99 +143,124 @@ public class DashboardActivity extends AppCompatActivity {
         Task<QuerySnapshot> chkTask =
                 db.collection("checkins").whereEqualTo("counsellorId", myId).get();
 
-        Tasks.whenAllSuccess(alertTask, reqTask, patTask, chkTask).addOnSuccessListener(results -> {
-            QuerySnapshot alerts = (QuerySnapshot) results.get(0);
-            QuerySnapshot requests = (QuerySnapshot) results.get(1);
-            QuerySnapshot patients = (QuerySnapshot) results.get(2);
-            QuerySnapshot checkins = (QuerySnapshot) results.get(3);
+        Tasks.whenAllSuccess(profileTask, alertTask, reqTask, patTask, chkTask)
+                .addOnSuccessListener(results -> {
+                    DocumentSnapshot profile = (DocumentSnapshot) results.get(0);
+                    QuerySnapshot alerts = (QuerySnapshot) results.get(1);
+                    QuerySnapshot requests = (QuerySnapshot) results.get(2);
+                    QuerySnapshot patients = (QuerySnapshot) results.get(3);
+                    QuerySnapshot checkins = (QuerySnapshot) results.get(4);
 
-            // Urgent alerts first, newest on top
-            List<DocumentSnapshot> openAlerts = new ArrayList<>();
-            for (DocumentSnapshot a : alerts.getDocuments()) {
-                if ("open".equals(a.getString("status"))) {
-                    openAlerts.add(a);
-                }
-            }
-            openAlerts.sort(FlagRules::newestFirst);
-            ArrayList<Row> alertRows = new ArrayList<>();
-            for (DocumentSnapshot a : openAlerts) {
-                Row row = new Row();
-                row.isAlert = true;
-                row.id = a.getId();
-                row.name = a.getString("patientName");
-                Timestamp t = a.getTimestamp("createdAt");
-                String when = (t == null) ? "" : new SimpleDateFormat("EEE d MMM, HH:mm",
-                        Locale.getDefault()).format(t.toDate());
-                row.line = getString(R.string.db_alert_row_format, row.name, when);
-                alertRows.add(row);
-            }
+                    showHeader(profile);
+                    if (!Boolean.TRUE.equals(profile.getBoolean("approved"))) {
+                        showMessage(getString(R.string.db_pending));
+                        return;
+                    }
 
-            Map<String, List<DocumentSnapshot>> byPatient = new HashMap<>();
-            for (DocumentSnapshot c : checkins.getDocuments()) {
-                String pid = c.getString("userId");
-                if (pid != null) {
-                    byPatient.computeIfAbsent(pid, k -> new ArrayList<>()).add(c);
-                }
-            }
+                    // Urgent alerts first, newest on top
+                    List<DocumentSnapshot> openAlerts = new ArrayList<>();
+                    for (DocumentSnapshot a : alerts.getDocuments()) {
+                        if ("open".equals(a.getString("status"))) {
+                            openAlerts.add(a);
+                        }
+                    }
+                    openAlerts.sort(FlagRules::newestFirst);
+                    ArrayList<Row> alertRows = new ArrayList<>();
+                    for (DocumentSnapshot a : openAlerts) {
+                        Row row = new Row();
+                        row.isAlert = true;
+                        row.id = a.getId();
+                        row.name = a.getString("patientName");
+                        Timestamp t = a.getTimestamp("createdAt");
+                        String when = (t == null) ? "" : new SimpleDateFormat("EEE d MMM, HH:mm",
+                                Locale.getDefault()).format(t.toDate());
+                        row.line = getString(R.string.db_alert_row_format, row.name, when);
+                        alertRows.add(row);
+                    }
 
-            ArrayList<Row> requestRows = new ArrayList<>();
-            for (DocumentSnapshot r : requests.getDocuments()) {
-                if (!"pending".equals(r.getString("status"))) {
-                    continue;
-                }
-                Row row = new Row();
-                row.isRequest = true;
-                row.id = r.getId();
-                row.name = r.getString("patientName");
-                row.phone = r.getString("patientPhone");
-                row.line = getString(R.string.db_request_row_format, row.name, row.phone);
-                requestRows.add(row);
-            }
+                    Map<String, List<DocumentSnapshot>> byPatient = new HashMap<>();
+                    for (DocumentSnapshot c : checkins.getDocuments()) {
+                        String pid = c.getString("userId");
+                        if (pid != null) {
+                            byPatient.computeIfAbsent(pid, k -> new ArrayList<>()).add(c);
+                        }
+                    }
 
-            ArrayList<Row> patientRows = new ArrayList<>();
-            for (DocumentSnapshot p : patients.getDocuments()) {
-                Row row = new Row();
-                row.id = p.getId();
-                row.name = p.getString("name") == null ? "" : p.getString("name");
-                List<DocumentSnapshot> list = byPatient.get(row.id);
-                if (list != null) {
-                    list.sort(FlagRules::newestFirst);
-                    row.checkins = list;
-                }
-                DocumentSnapshot latest = row.checkins.isEmpty() ? null : row.checkins.get(0);
-                row.reasons = FlagRules.reasons(this, latest, p.getTimestamp("assignedAt"));
-                String latestLine = (latest == null)
-                        ? getString(R.string.db_no_checkins)
-                        : FlagRules.describe(this, latest, false);
-                row.line = row.name
-                        + (row.reasons.isEmpty() ? "" : " · " + TextUtils.join(", ", row.reasons))
-                        + "\n" + latestLine;
-                patientRows.add(row);
-            }
+                    ArrayList<Row> requestRows = new ArrayList<>();
+                    for (DocumentSnapshot r : requests.getDocuments()) {
+                        if (!"pending".equals(r.getString("status"))) {
+                            continue;
+                        }
+                        Row row = new Row();
+                        row.isRequest = true;
+                        row.id = r.getId();
+                        row.name = r.getString("patientName");
+                        row.phone = r.getString("patientPhone");
+                        row.line = getString(R.string.db_request_row_format, row.name, row.phone);
+                        requestRows.add(row);
+                    }
 
-            // Most flags first, then alphabetical
-            patientRows.sort((a, b) -> {
-                int diff = b.reasons.size() - a.reasons.size();
-                return diff != 0 ? diff : a.name.compareToIgnoreCase(b.name);
-            });
+                    ArrayList<Row> patientRows = new ArrayList<>();
+                    for (DocumentSnapshot p : patients.getDocuments()) {
+                        Row row = new Row();
+                        row.id = p.getId();
+                        row.name = p.getString("name") == null ? "" : p.getString("name");
+                        List<DocumentSnapshot> list = byPatient.get(row.id);
+                        if (list != null) {
+                            list.sort(FlagRules::newestFirst);
+                            row.checkins = list;
+                        }
+                        DocumentSnapshot latest =
+                                row.checkins.isEmpty() ? null : row.checkins.get(0);
+                        row.reasons = FlagRules.reasons(this, latest, p.getTimestamp("assignedAt"));
+                        String latestLine = (latest == null)
+                                ? getString(R.string.db_no_checkins)
+                                : FlagRules.describe(this, latest, false);
+                        row.line = row.name
+                                + (row.reasons.isEmpty() ? ""
+                                : " · " + TextUtils.join(", ", row.reasons))
+                                + "\n" + latestLine;
+                        patientRows.add(row);
+                    }
 
-            rows.clear();
-            rows.addAll(alertRows);
-            rows.addAll(requestRows);
-            rows.addAll(patientRows);
-            lines.clear();
-            for (Row r : rows) {
-                lines.add(r.line);
-            }
-            if (rows.isEmpty()) {
-                txtEmpty.setText(R.string.db_empty);
-                txtEmpty.setVisibility(View.VISIBLE);
-            } else {
-                txtEmpty.setVisibility(View.GONE);
-            }
-            adapter.notifyDataSetChanged();
-        }).addOnFailureListener(e ->
-                Toast.makeText(this, R.string.error_load_checkins, Toast.LENGTH_LONG).show());
+                    // Most flags first, then alphabetical
+                    patientRows.sort((a, b) -> {
+                        int diff = b.reasons.size() - a.reasons.size();
+                        return diff != 0 ? diff : a.name.compareToIgnoreCase(b.name);
+                    });
+
+                    rows.clear();
+                    rows.addAll(alertRows);
+                    rows.addAll(requestRows);
+                    rows.addAll(patientRows);
+                    lines.clear();
+                    for (Row r : rows) {
+                        lines.add(r.line);
+                    }
+                    if (rows.isEmpty()) {
+                        txtEmpty.setText(R.string.db_empty);
+                        txtEmpty.setVisibility(View.VISIBLE);
+                    } else {
+                        txtEmpty.setVisibility(View.GONE);
+                    }
+                    adapter.notifyDataSetChanged();
+                })
+                .addOnFailureListener(e -> {
+                    // Most likely the account is not approved yet, so the rules refuse the lists
+                    db.collection("users").document(myId).get()
+                            .addOnSuccessListener(p -> {
+                                showHeader(p);
+                                if (!Boolean.TRUE.equals(p.getBoolean("approved"))) {
+                                    showMessage(getString(R.string.db_pending));
+                                } else {
+                                    Toast.makeText(this, R.string.error_load_checkins,
+                                            Toast.LENGTH_LONG).show();
+                                }
+                            })
+                            .addOnFailureListener(x ->
+                                    Toast.makeText(this, R.string.error_load_checkins,
+                                            Toast.LENGTH_LONG).show());
+                });
     }
 
     private void showRequest(Row r) {

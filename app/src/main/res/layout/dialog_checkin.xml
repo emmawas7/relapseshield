@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingStart="24dp"
+    android:paddingTop="16dp"
+    android:paddingEnd="24dp"
+    android:paddingBottom="16dp">
+
+    <TextView
+        android:id="@+id/txtDetails"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textColor="@color/text_dark"
+        android:textSize="16sp" />
+
+    <Button
+        android:id="@+id/btnDlgEdit"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:layout_marginTop="20dp"
+        android:backgroundTint="@color/primary"
+        android:text="@string/ce_edit"
+        android:textColor="@color/on_primary"
+        android:textSize="16sp" />
+
+    <Button
+        android:id="@+id/btnDlgDelete"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:layout_marginTop="8dp"
+        android:backgroundTint="@color/error_red"
+        android:text="@string/ce_delete"
+        android:textColor="@color/on_primary"
+        android:textSize="16sp" />
+
+    <Button
+        android:id="@+id/btnDlgClose"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:layout_marginTop="8dp"
+        android:backgroundTint="@color/primary_light"
+        android:text="@string/mn_close"
+        android:textColor="@color/primary_dark"
+        android:textSize="16sp" />
+</LinearLayout>

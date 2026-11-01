@@ -1,11 +1,11 @@
 package com.example.relapseshield;
 
-
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
@@ -79,9 +79,21 @@ public class PatientActivity extends AppCompatActivity {
         txtPatientName.setText(getIntent().getStringExtra("patientName"));
 
         txtBack.setOnClickListener(v -> finish());
-        btnCall.setOnClickListener(v -> dial(phone, "call"));
-        btnCallKin.setOnClickListener(v -> dial(kinPhone, "call_kin"));
-        btnMessage.setOnClickListener(v -> message());
+
+        btnCall.setOnClickListener(v -> {
+            Log.d("Contact", "Call tapped, number " + (phone == null ? "not loaded" : "loaded"));
+            dial(phone, "call");
+        });
+        btnCallKin.setOnClickListener(v -> {
+            Log.d("Contact", "Call kin tapped, number "
+                    + (kinPhone == null ? "not loaded" : "loaded"));
+            dial(kinPhone, "call_kin");
+        });
+        btnMessage.setOnClickListener(v -> {
+            Log.d("Contact", "Message tapped, number " + (phone == null ? "not loaded" : "loaded"));
+            message();
+        });
+
         btnReviewed.setOnClickListener(v -> markReviewed());
         btnAlertHandled.setOnClickListener(v -> handleAlert());
     }
@@ -116,8 +128,10 @@ public class PatientActivity extends AppCompatActivity {
                     loadAlert();
                     loadCheckins();
                 })
-                .addOnFailureListener(e ->
-                        Toast.makeText(this, R.string.pt_error_load, Toast.LENGTH_LONG).show());
+                .addOnFailureListener(e -> {
+                    Log.e("Contact", "Could not load the patient", e);
+                    Toast.makeText(this, R.string.pt_error_load, Toast.LENGTH_LONG).show();
+                });
     }
 
     // Is there an open alert from this patient? Show it, and why, with a button to close it.
@@ -204,28 +218,44 @@ public class PatientActivity extends AppCompatActivity {
     // the green button; the app never places a call by itself, so no permission is needed.
     private void dial(String number, String action) {
         if (number == null || number.isEmpty()) {
+            Toast.makeText(this, R.string.pt_still_loading, Toast.LENGTH_LONG).show();
             return;
         }
         logAccess(action);
         try {
             startActivity(new Intent(Intent.ACTION_DIAL, Uri.fromParts("tel", number, null)));
         } catch (ActivityNotFoundException e) {
+            Log.e("Contact", "No dialler available", e);
             Toast.makeText(this, R.string.pt_error_no_app, Toast.LENGTH_LONG).show();
         }
     }
 
-    // Opens the messaging app addressed to the patient, with an editable opening line
+    // Opens the messaging app addressed to the patient, with an editable opening line.
+    // If the first way does not open, a second way is tried.
     private void message() {
         if (phone == null || phone.isEmpty()) {
+            Toast.makeText(this, R.string.pt_still_loading, Toast.LENGTH_LONG).show();
             return;
         }
         logAccess("message");
         String first = (patientName == null) ? "" : patientName.split(" ")[0];
-        Intent intent = new Intent(Intent.ACTION_SENDTO, Uri.fromParts("smsto", phone, null));
-        intent.putExtra("sms_body", getString(R.string.pt_msg_body, first));
+        String body = getString(R.string.pt_msg_body, first);
+
+        Intent intent = new Intent(Intent.ACTION_SENDTO, Uri.parse("smsto:" + phone));
+        intent.putExtra("sms_body", body);
         try {
             startActivity(intent);
+            return;
         } catch (ActivityNotFoundException e) {
+            Log.e("Contact", "smsto did not open", e);
+        }
+
+        Intent alt = new Intent(Intent.ACTION_VIEW, Uri.parse("sms:" + phone));
+        alt.putExtra("sms_body", body);
+        try {
+            startActivity(alt);
+        } catch (ActivityNotFoundException e) {
+            Log.e("Contact", "sms did not open either", e);
             Toast.makeText(this, R.string.pt_error_no_app, Toast.LENGTH_LONG).show();
         }
     }

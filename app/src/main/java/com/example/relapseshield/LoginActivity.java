@@ -141,6 +141,19 @@ public class LoginActivity extends AppCompatActivity {
     }
     // Welcome the user, then open Home (which sends counsellors on to their dashboard)
     private void openHome(String uid) {
+        String cachedName = prefs.getString("cache_name_" + uid, "");
+        String cachedRole = prefs.getString("cache_role_" + uid, "patient");
+
+        boolean hasCache = !cachedName.isEmpty();
+        if (hasCache) {
+            Toast.makeText(this, getString(R.string.welcome_back_format, cachedName), Toast.LENGTH_LONG).show();
+            Intent intent = new Intent(LoginActivity.this, HomeActivity.class);
+            intent.putExtra("name", cachedName);
+            intent.putExtra("role", cachedRole);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            startActivity(intent);
+        }
+
         db.collection("users").document(uid).get()
                 .addOnSuccessListener(profile -> {
                     // A login with no profile means an administrator removed this account
@@ -153,19 +166,30 @@ public class LoginActivity extends AppCompatActivity {
                     }
 
                     String name = profile.getString("name");
-                    Toast.makeText(this, getString(R.string.welcome_back_format,
-                            name == null ? "" : name), Toast.LENGTH_LONG).show();
+                    String role = profile.getString("role");
+                    if (name == null) name = "";
+                    if (role == null) role = "patient";
 
-                    Intent intent = new Intent(LoginActivity.this, HomeActivity.class);
-                    intent.putExtra("name", name);
-                    intent.putExtra("role", profile.getString("role"));
-                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                    startActivity(intent);
+                    prefs.edit()
+                            .putString("cache_name_" + uid, name)
+                            .putString("cache_role_" + uid, role)
+                            .apply();
+
+                    if (!hasCache) {
+                        Toast.makeText(this, getString(R.string.welcome_back_format, name), Toast.LENGTH_LONG).show();
+                        Intent intent = new Intent(LoginActivity.this, HomeActivity.class);
+                        intent.putExtra("name", name);
+                        intent.putExtra("role", role);
+                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                        startActivity(intent);
+                    }
                 })
                 .addOnFailureListener(e -> {
-                    auth.signOut();
-                    btnLogin.setEnabled(true);
-                    Toast.makeText(this, R.string.lg_error_profile, Toast.LENGTH_LONG).show();
+                    if (!hasCache) {
+                        auth.signOut();
+                        btnLogin.setEnabled(true);
+                        Toast.makeText(this, R.string.lg_error_profile, Toast.LENGTH_LONG).show();
+                    }
                 });
     }
 
