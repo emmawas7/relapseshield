@@ -120,7 +120,7 @@ public class PatientActivity extends AppCompatActivity {
                         Toast.makeText(this, R.string.pt_error_load, Toast.LENGTH_LONG).show());
     }
 
-    // Is there an open alert from this patient? Show it, with a button to close it.
+    // Is there an open alert from this patient? Show it, and why, with a button to close it.
     private void loadAlert() {
         db.collection("alerts").document(patientId).get()
                 .addOnSuccessListener(alert -> {
@@ -131,7 +131,12 @@ public class PatientActivity extends AppCompatActivity {
                         Timestamp t = alert.getTimestamp("createdAt");
                         String when = (t == null) ? "" : new SimpleDateFormat("EEE d MMM, HH:mm",
                                 Locale.getDefault()).format(t.toDate());
-                        txtAlert.setText(getString(R.string.pt_alert_format, when));
+                        String text = getString(R.string.pt_alert_format, when);
+                        if ("checkin".equals(alert.getString("source"))) {
+                            text += "\n" + getString(R.string.fw_alert_reason_format,
+                                    TextUtils.join(", ", FlagRules.stringList(alert, "words")));
+                        }
+                        txtAlert.setText(text);
                     }
                 });
     }

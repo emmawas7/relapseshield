@@ -315,14 +315,19 @@ public class DashboardActivity extends AppCompatActivity {
         startActivity(intent);
     }
 
-    // The app-wide menu
+    // The app-wide menu (counsellor accounts are removed by the administrator)
     private void showMenu(View anchor) {
         PopupMenu menu = new PopupMenu(this, anchor);
         menu.getMenuInflater().inflate(R.menu.menu_app, menu.getMenu());
+        menu.getMenu().removeItem(R.id.action_delete_account);
+        menu.getMenu().add(0, 1001, 0, R.string.fw_menu); // counsellor-only item
         menu.setOnMenuItemClickListener(item -> {
             int id = item.getItemId();
             if (id == R.id.action_refresh) {
                 loadAll();
+                return true;
+            } else if (id == 1001) {
+                startActivity(new Intent(DashboardActivity.this, WordsActivity.class));
                 return true;
             } else if (id == R.id.action_about) {
                 new AlertDialog.Builder(this)
@@ -343,7 +348,6 @@ public class DashboardActivity extends AppCompatActivity {
         });
         menu.show();
     }
-
     private void showMessage(String message) {
         rows.clear();
         lines.clear();

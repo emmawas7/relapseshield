@@ -207,7 +207,7 @@
     <string name="pt_reviewed_done">Marked as reviewed</string>
     <string name="ce_title_new">New check-in</string>
     <string name="ce_title_edit">Edit check-in</string>
-    <string name="ce_subtitle">How are you today?</string>
+    <string name="ce_subtitle">How are you today? Your counsellor reads your notes, and serious wording alerts them at once.</string>
     <string name="ce_cancel">Cancel</string>
     <string name="ce_mood_label_format">Mood: %1$d of 5</string>
     <string name="ce_mood_description">Mood from 1 (low) to 5 (good)</string>
@@ -260,8 +260,8 @@
     <string name="em_no_dialler">No dialler available on this phone</string>
 
     <!-- Emergency (counsellor) -->
-    <string name="db_alert_row_format">URGENT · %1$s asked for help\n%2$s</string>
-    <string name="pt_alert_format">This patient asked for help at %1$s</string>
+    <string name="db_alert_row_format">URGENT · %1$s needs your attention\n%2$s</string>
+    <string name="pt_alert_format">Urgent alert raised at %1$s</string>
     <string name="pt_alert_handled">Mark alert handled</string>
     <string name="pt_alert_done">Alert marked as handled</string>
     <string name="em_step_1">Step 1 · Slow your breathing</string>
@@ -291,4 +291,37 @@
     <string name="da_failed">Could not delete your account. Please try again.</string>
     <string name="da_done">Your account and data have been deleted</string>
     <string name="rm_account_removed">This account has been removed. Please contact your centre if this is a mistake.</string>
+    <!-- Flag words -->
+    <string name="fw_menu">Flag words</string>
+    <string name="fw_title">Flag words</string>
+    <string name="fw_back">Back</string>
+    <string name="fw_subtitle">Words in a patient\'s note that raise a check-in for your attention. You decide the list.</string>
+    <string name="fw_empty">No words yet. Add your own, or start from the suggested list.</string>
+    <string name="fw_add">Add word</string>
+    <string name="fw_starter">Add suggested words</string>
+    <string name="fw_level_watch">Watch</string>
+    <string name="fw_level_urgent">Urgent</string>
+    <string name="fw_row_format">%1$s · %2$s</string>
+    <string name="fw_dialog_title">Add a flag word</string>
+    <string name="fw_hint_word">Word or short phrase</string>
+    <string name="fw_radio_watch">Watch: adds a reason to the patient\'s flags</string>
+    <string name="fw_radio_urgent">Urgent: raises an urgent alert at once</string>
+    <string name="fw_save">Add</string>
+    <string name="fw_cancel">Cancel</string>
+    <string name="fw_error_required">Enter a word or phrase</string>
+    <string name="fw_error_long">Keep it under 40 characters</string>
+    <string name="fw_error_duplicate">That word is already in your list</string>
+    <string name="fw_delete_title">Remove this word?</string>
+    <string name="fw_delete_yes">Remove</string>
+    <string name="fw_added">Word added</string>
+    <string name="fw_removed">Word removed</string>
+    <string name="fw_starter_done">Suggested words added</string>
+    <string name="fw_failed">Could not save. Please try again.</string>
+    <string name="fw_reason_watch_format">Mentions: %1$s</string>
+    <string name="fw_flagged_format">Words flagged: %1$s</string>
+    <string name="fw_alert_reason_format">A check-in contained urgent wording: %1$s</string>
+    <string name="fw_help_title">We are here for you</string>
+    <string name="fw_help_message">What you wrote sounds serious. Your counsellor has been told and will reach out to you. If you are in danger right now, call the emergency services.</string>
+    <string name="fw_help_support">Support steps</string>
+    <string name="fw_help_close">Close</string>
 </resources>

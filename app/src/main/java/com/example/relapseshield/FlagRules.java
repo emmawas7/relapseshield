@@ -1,6 +1,6 @@
 package com.example.relapseshield;
-
 import android.content.Context;
+import android.text.TextUtils;
 
 import com.google.firebase.Timestamp;
 import com.google.firebase.firestore.DocumentSnapshot;
@@ -12,6 +12,54 @@ import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
 public class FlagRules {
+
+    // A flag word from the counsellor's list. "level" is "watch" or "urgent".
+    public static class Word {
+        public final String text; // already normalised
+        public final String level;
+
+        public Word(String text, String level) {
+            this.text = normalise(text);
+            this.level = level;
+        }
+    }
+
+    // Lower-case, straighten apostrophes, and turn everything except letters,
+    // digits and apostrophes into single spaces
+    public static String normalise(String s) {
+        if (s == null) {
+            return "";
+        }
+        String t = s.toLowerCase(Locale.ROOT).replace('\u2019', '\'');
+        return t.replaceAll("[^\\p{L}\\p{N}']+", " ").trim();
+    }
+
+    // Whole words or phrases only, so "high" does not match "highway"
+    public static List<String> matchWords(String note, List<Word> words, String level) {
+        List<String> found = new ArrayList<>();
+        String padded = " " + normalise(note) + " ";
+        for (Word w : words) {
+            if (level.equals(w.level) && !w.text.isEmpty()
+                    && padded.contains(" " + w.text + " ") && !found.contains(w.text)) {
+                found.add(w.text);
+            }
+        }
+        return found;
+    }
+
+    // Reads a list of text values saved on a document
+    public static List<String> stringList(DocumentSnapshot doc, String field) {
+        List<String> out = new ArrayList<>();
+        Object value = doc.get(field);
+        if (value instanceof List) {
+            for (Object o : (List<?>) value) {
+                if (o != null) {
+                    out.add(String.valueOf(o));
+                }
+            }
+        }
+        return out;
+    }
 
     // THE FLAG RULES. "latest" is null when the patient has no check-ins yet.
     public static List<String> reasons(Context ctx, DocumentSnapshot latest, Timestamp assignedAt) {
@@ -32,6 +80,13 @@ public class FlagRules {
             }
             if (triggered && c >= 2) {
                 out.add(ctx.getString(R.string.fl_triggered));
+            }
+
+            // Watch words found in the note when it was saved
+            List<String> watch = stringList(latest, "watchWords");
+            if (!watch.isEmpty()) {
+                out.add(ctx.getString(R.string.fw_reason_watch_format,
+                        TextUtils.join(", ", watch)));
             }
         }
 
@@ -81,12 +136,21 @@ public class FlagRules {
                 .append(ctx.getString(R.string.checkin_line_cravings_format, levels[level]));
         if (triggered != null && triggered) {
             sb.append(" · ").append(ctx.getString(R.string.checkin_line_triggered));
-            if (doc.getTimestamp("editedAt") != null) {
-                sb.append(" · ").append(ctx.getString(R.string.ce_edited));
-            }
+        }
+        if (doc.getTimestamp("editedAt") != null) {
+            sb.append(" · ").append(ctx.getString(R.string.ce_edited));
         }
         if (includeNote && note != null && !note.isEmpty()) {
             sb.append("\n").append(note);
+        }
+        if (includeNote) {
+            List<String> flagged = new ArrayList<>();
+            flagged.addAll(stringList(doc, "urgentWords"));
+            flagged.addAll(stringList(doc, "watchWords"));
+            if (!flagged.isEmpty()) {
+                sb.append("\n").append(ctx.getString(R.string.fw_flagged_format,
+                        TextUtils.join(", ", flagged)));
+            }
         }
         return sb.toString();
     }

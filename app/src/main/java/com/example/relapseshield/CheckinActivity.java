@@ -1,5 +1,9 @@
 package com.example.relapseshield;
+import android.content.ActivityNotFoundException;
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
+import android.util.Log;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.RadioGroup;
@@ -7,6 +11,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.android.material.slider.Slider;
@@ -14,11 +19,16 @@ import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 
 public class CheckinActivity extends AppCompatActivity {
 
@@ -127,38 +137,8 @@ public class CheckinActivity extends AppCompatActivity {
         }
 
         btnSaveCheckin.setEnabled(false);
-        if (editId != null) {
-            updateCheckin(mood, cravings, triggered, note);
-        } else {
-            createCheckin(user, mood, cravings, triggered, note);
-        }
-    }
 
-    // Editing marks the check-in as unreviewed again and records when it was edited,
-    // so the counsellor can see that it changed.
-    private void updateCheckin(int mood, int cravings, boolean triggered, String note) {
-        Map<String, Object> changes = new HashMap<>();
-        changes.put("mood", mood);
-        changes.put("cravings", cravings);
-        changes.put("triggered", triggered);
-        changes.put("note", note);
-        changes.put("reviewed", false);
-        changes.put("editedAt", FieldValue.serverTimestamp());
-
-        db.collection("checkins").document(editId).update(changes)
-                .addOnSuccessListener(v -> {
-                    Toast.makeText(this, R.string.ce_updated, Toast.LENGTH_SHORT).show();
-                    finish();
-                })
-                .addOnFailureListener(e -> {
-                    btnSaveCheckin.setEnabled(true);
-                    Toast.makeText(this, R.string.error_checkin_failed, Toast.LENGTH_LONG).show();
-                });
-    }
-
-    // New check-ins are stamped with the patient's counsellor so they reach the right dashboard
-    private void createCheckin(FirebaseUser user, int mood, int cravings,
-                               boolean triggered, String note) {
+        // Find the patient's counsellor, then that counsellor's flag words
         db.collection("users").document(user.getUid()).get()
                 .addOnSuccessListener(profile -> {
                     String counsellorId = profile.getString("counsellorId");
@@ -167,33 +147,152 @@ public class CheckinActivity extends AppCompatActivity {
                         Toast.makeText(this, R.string.ce_not_linked, Toast.LENGTH_LONG).show();
                         return;
                     }
-
-                    Map<String, Object> checkin = new HashMap<>();
-                    checkin.put("userId", user.getUid());
-                    checkin.put("counsellorId", counsellorId);
-                    checkin.put("mood", mood);
-                    checkin.put("cravings", cravings);
-                    checkin.put("triggered", triggered);
-                    checkin.put("note", note);
-                    checkin.put("reviewed", false);
-                    checkin.put("createdAt", FieldValue.serverTimestamp());
-
-                    db.collection("checkins").add(checkin)
-                            .addOnSuccessListener(ref -> {
-                                Toast.makeText(this, R.string.checkin_saved,
-                                        Toast.LENGTH_SHORT).show();
-                                finish();
-                            })
-                            .addOnFailureListener(e -> {
-                                btnSaveCheckin.setEnabled(true);
-                                Toast.makeText(this, R.string.error_checkin_failed,
-                                        Toast.LENGTH_LONG).show();
-                            });
+                    loadWords(counsellorId, words -> {
+                        List<String> urgent = FlagRules.matchWords(note, words, "urgent");
+                        List<String> watch = FlagRules.matchWords(note, words, "watch");
+                        if (editId != null) {
+                            updateCheckin(user, profile, mood, cravings, triggered, note,
+                                    urgent, watch);
+                        } else {
+                            createCheckin(user, profile, mood, cravings, triggered, note,
+                                    urgent, watch);
+                        }
+                    });
                 })
                 .addOnFailureListener(e -> {
                     btnSaveCheckin.setEnabled(true);
                     Toast.makeText(this, R.string.error_checkin_failed, Toast.LENGTH_LONG).show();
                 });
+    }
+
+    // If the list cannot be loaded, the check-in is still saved, just without word matching
+    private void loadWords(String counsellorId, Consumer<List<FlagRules.Word>> done) {
+        db.collection("flagWords").whereEqualTo("counsellorId", counsellorId).get()
+                .addOnSuccessListener(snapshot -> {
+                    List<FlagRules.Word> words = new ArrayList<>();
+                    for (DocumentSnapshot d : snapshot.getDocuments()) {
+                        String w = d.getString("word");
+                        String level = d.getString("level");
+                        if (w != null && level != null) {
+                            words.add(new FlagRules.Word(w, level));
+                        }
+                    }
+                    done.accept(words);
+                })
+                .addOnFailureListener(e -> {
+                    Log.e("FlagWords", "Could not load the word list", e);
+                    done.accept(new ArrayList<>());
+                });
+    }
+
+    private void createCheckin(FirebaseUser user, DocumentSnapshot profile, int mood,
+                               int cravings, boolean triggered, String note,
+                               List<String> urgent, List<String> watch) {
+        Map<String, Object> checkin = new HashMap<>();
+        checkin.put("userId", user.getUid());
+        checkin.put("counsellorId", profile.getString("counsellorId"));
+        checkin.put("mood", mood);
+        checkin.put("cravings", cravings);
+        checkin.put("triggered", triggered);
+        checkin.put("note", note);
+        checkin.put("urgentWords", urgent);
+        checkin.put("watchWords", watch);
+        checkin.put("reviewed", false);
+        checkin.put("createdAt", FieldValue.serverTimestamp());
+
+        db.collection("checkins").add(checkin)
+                .addOnSuccessListener(ref -> afterSave(user, profile, urgent, R.string.checkin_saved))
+                .addOnFailureListener(e -> {
+                    btnSaveCheckin.setEnabled(true);
+                    Toast.makeText(this, R.string.error_checkin_failed, Toast.LENGTH_LONG).show();
+                });
+    }
+
+    // Editing marks the check-in as unreviewed again and records when it was edited
+    private void updateCheckin(FirebaseUser user, DocumentSnapshot profile, int mood,
+                               int cravings, boolean triggered, String note,
+                               List<String> urgent, List<String> watch) {
+        Map<String, Object> changes = new HashMap<>();
+        changes.put("mood", mood);
+        changes.put("cravings", cravings);
+        changes.put("triggered", triggered);
+        changes.put("note", note);
+        changes.put("urgentWords", urgent);
+        changes.put("watchWords", watch);
+        changes.put("reviewed", false);
+        changes.put("editedAt", FieldValue.serverTimestamp());
+
+        db.collection("checkins").document(editId).update(changes)
+                .addOnSuccessListener(v -> afterSave(user, profile, urgent, R.string.ce_updated))
+                .addOnFailureListener(e -> {
+                    btnSaveCheckin.setEnabled(true);
+                    Toast.makeText(this, R.string.error_checkin_failed, Toast.LENGTH_LONG).show();
+                });
+    }
+
+    private void afterSave(FirebaseUser user, DocumentSnapshot profile,
+                           List<String> urgent, int savedMessage) {
+        Toast.makeText(this, savedMessage, Toast.LENGTH_SHORT).show();
+        if (urgent.isEmpty()) {
+            finish();
+        } else {
+            raiseUrgentAlert(user, profile, urgent);
+        }
+    }
+
+    // Urgent wording raises an alert for the counsellor (unless one is already open),
+    // and the patient is shown help straight away
+    private void raiseUrgentAlert(FirebaseUser user, DocumentSnapshot profile,
+                                  List<String> urgent) {
+        DocumentReference ref = db.collection("alerts").document(user.getUid());
+        ref.get().addOnSuccessListener(existing -> {
+            if (existing.exists() && "open".equals(existing.getString("status"))) {
+                showHelp();
+                return;
+            }
+            Map<String, Object> alert = new HashMap<>();
+            alert.put("patientId", user.getUid());
+            alert.put("patientName", profile.getString("name"));
+            alert.put("counsellorId", profile.getString("counsellorId"));
+            alert.put("counsellorName", profile.getString("counsellorName"));
+            alert.put("status", "open");
+            alert.put("source", "checkin");
+            alert.put("words", urgent);
+            alert.put("createdAt", FieldValue.serverTimestamp());
+            ref.set(alert)
+                    .addOnSuccessListener(v -> showHelp())
+                    .addOnFailureListener(e -> {
+                        Log.e("FlagWords", "Could not raise the alert", e);
+                        showHelp();
+                    });
+        }).addOnFailureListener(e -> {
+            Log.e("FlagWords", "Could not read the alert", e);
+            showHelp();
+        });
+    }
+
+    // Shown after a check-in with urgent wording; the patient must choose to continue
+    private void showHelp() {
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.fw_help_title)
+                .setMessage(R.string.fw_help_message)
+                .setCancelable(false)
+                .setPositiveButton(R.string.fw_help_support, (d, w) -> {
+                    startActivity(new Intent(CheckinActivity.this, EmergencyActivity.class));
+                    finish();
+                })
+                .setNegativeButton(getString(R.string.em_call_format,
+                        getString(R.string.em_number)), (d, w) -> {
+                    try {
+                        startActivity(new Intent(Intent.ACTION_DIAL,
+                                Uri.fromParts("tel", getString(R.string.em_number), null)));
+                    } catch (ActivityNotFoundException e) {
+                        Toast.makeText(this, R.string.em_no_dialler, Toast.LENGTH_LONG).show();
+                    }
+                    finish();
+                })
+                .setNeutralButton(R.string.fw_help_close, (d, w) -> finish())
+                .show();
     }
 
     private int cravingLevel() {
