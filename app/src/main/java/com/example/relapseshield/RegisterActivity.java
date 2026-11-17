@@ -1,5 +1,6 @@
 package com.example.relapseshield;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Patterns;
 import android.view.View;
@@ -294,8 +295,13 @@ public class RegisterActivity extends AppCompatActivity {
                     batch.set(db.collection("users").document(fu.getUid()), profile);
                     batch.set(db.collection("requests").document(fu.getUid()), request);
                     batch.commit()
-                            .addOnSuccessListener(v -> finishRegistration(
-                                    String.valueOf(profile.get("email")), R.string.rg_success_patient))
+                            .addOnSuccessListener(v -> {
+                                SharedPreferences prefs = getSharedPreferences("relapse_prefs", MODE_PRIVATE);
+                                prefs.edit().putString("cache_role_" + fu.getUid(), "patient")
+                                        .putString("cache_name_" + fu.getUid(), String.valueOf(profile.get("name")))
+                                        .apply();
+                                finishRegistration(String.valueOf(profile.get("email")), R.string.rg_success_patient);
+                            })
                             .addOnFailureListener(e ->
                                     abort(fu, null, R.string.rg_error_request_failed));
                 })
@@ -315,8 +321,13 @@ public class RegisterActivity extends AppCompatActivity {
         batch.set(db.collection("users").document(fu.getUid()), profile);
         batch.set(db.collection("counsellorCodes").document(myCode), codeEntry);
         batch.commit()
-                .addOnSuccessListener(v -> finishRegistration(
-                        String.valueOf(profile.get("email")), R.string.rg_success_counsellor))
+                .addOnSuccessListener(v -> {
+                    SharedPreferences prefs = getSharedPreferences("relapse_prefs", MODE_PRIVATE);
+                    prefs.edit().putString("cache_role_" + fu.getUid(), "counsellor")
+                            .putString("cache_name_" + fu.getUid(), String.valueOf(profile.get("name")))
+                            .apply();
+                    finishRegistration(String.valueOf(profile.get("email")), R.string.rg_success_counsellor);
+                })
                 .addOnFailureListener(e -> abort(fu, null, R.string.error_register_failed));
     }
 

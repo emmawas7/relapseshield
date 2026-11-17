@@ -177,6 +177,7 @@
     <!-- Menu and pop-ups -->
     <string name="mn_menu">Menu</string>
     <string name="mn_refresh">Refresh</string>
+    <string name="mn_refreshed">Refreshed</string>
     <string name="mn_about">About Relapse Shield</string>
     <string name="mn_logout">Log out</string>
     <string name="mn_about_title">Relapse Shield</string>
@@ -325,4 +326,40 @@
     <string name="fw_help_support">Support steps</string>
     <string name="fw_help_close">Close</string>
     <string name="pt_still_loading">The contact details are still loading. Try again in a moment.</string>
+    <!-- Resources (REST) -->
+    <string name="rs_menu">Help and resources</string>
+    <string name="rs_title">Help and resources</string>
+    <string name="rs_back">Back</string>
+    <string name="rs_subtitle">Helplines and centres you can contact. Loaded from the internet.</string>
+    <string name="rs_empty">No resources are listed yet.</string>
+    <string name="rs_retry">Try again</string>
+    <string name="rs_call">Call</string>
+    <string name="rs_no_phone">No phone number listed</string>
+    <string name="rs_error_offline">No internet connection. Check your data or Wi-Fi and try again.</string>
+    <string name="rs_error_timeout">The server took too long to answer. Please try again.</string>
+    <string name="rs_error_server">The server returned an error (code %1$d). Please try again later.</string>
+    <string name="rs_error_data">The information could not be read. Please try again later.</string>
+
+    <!-- Daily reminder -->
+    <string name="rm_menu">Daily reminder</string>
+    <string name="rm_title">Daily reminder</string>
+    <string name="rm_back">Back</string>
+    <string name="rm_subtitle">A gentle nudge to do your check-in.</string>
+    <string name="rm_switch">Remind me every day</string>
+    <string name="rm_time_format">Reminder time: %1$02d:%2$02d</string>
+    <string name="rm_pick_time">Change time</string>
+    <string name="rm_test">Send a test reminder now</string>
+    <string name="rm_test_sent">Test alarm sent!</string>
+    <string name="rm_alarm_enabled">Daily check-in alarm enabled</string>
+    <string name="rm_alarm_disabled">Daily check-in alarm disabled</string>
+    <string name="rm_enabled_format">Reminder set for %1$02d:%2$02d every day.</string>
+    <string name="rm_disabled">The reminder is off.</string>
+    <string name="rm_denied">Notifications are blocked for this app, so the reminder cannot appear. You can allow them in settings.</string>
+    <string name="rm_open_settings">Open notification settings</string>
+    <string name="rm_note">The alarm will sound every day at the chosen time.</string>
+    <string name="rm_notif_title">Relapse Shield</string>
+    <string name="rm_notif_text">Take a minute for today\'s check-in.</string>
+    <string name="rm_notif_public_title">Reminder</string>
+    <string name="rm_channel_name">Daily check-in alarm</string>
+    <string name="rm_channel_desc">Daily check-in alarm</string>
 </resources>

@@ -63,6 +63,11 @@ public class FlagRules {
 
     // THE FLAG RULES. "latest" is null when the patient has no check-ins yet.
     public static List<String> reasons(Context ctx, DocumentSnapshot latest, Timestamp assignedAt) {
+        return reasons(ctx, latest, assignedAt, null);
+    }
+
+    public static List<String> reasons(Context ctx, DocumentSnapshot latest, Timestamp assignedAt,
+                                       Timestamp lastReviewedAt) {
         List<String> out = new ArrayList<>();
 
         // Signals in the latest check-in, until the counsellor marks it reviewed
@@ -90,13 +95,21 @@ public class FlagRules {
             }
         }
 
-        // Silence: three or more days since the last check-in (or since being confirmed)
-        Timestamp base = (latest != null) ? latest.getTimestamp("createdAt") : assignedAt;
-        if (base != null) {
-            long days = TimeUnit.MILLISECONDS.toDays(
-                    System.currentTimeMillis() - base.toDate().getTime());
-            if (days >= 3) {
-                out.add(ctx.getString(R.string.fl_silent_format, (int) days));
+        // Silence: three or more days since the last check-in (or since being confirmed or reviewed)
+        // Only flag silence if the latest check-in is not reviewed
+        if (latest == null || !Boolean.TRUE.equals(latest.getBoolean("reviewed"))) {
+            Timestamp base = (latest != null) ? latest.getTimestamp("createdAt") : assignedAt;
+            if (lastReviewedAt != null) {
+                if (base == null || lastReviewedAt.compareTo(base) > 0) {
+                    base = lastReviewedAt;
+                }
+            }
+            if (base != null) {
+                long days = TimeUnit.MILLISECONDS.toDays(
+                        System.currentTimeMillis() - base.toDate().getTime());
+                if (days >= 3) {
+                    out.add(ctx.getString(R.string.fl_silent_format, (int) days));
+                }
             }
         }
         return out;

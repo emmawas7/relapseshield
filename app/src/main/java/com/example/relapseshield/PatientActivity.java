@@ -17,9 +17,11 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.google.firebase.Timestamp;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.SetOptions;
 import com.google.firebase.firestore.WriteBatch;
 
 import java.text.SimpleDateFormat;
@@ -39,8 +41,9 @@ public class PatientActivity extends AppCompatActivity {
     FirebaseFirestore db;
 
     String patientId, patientName, phone, kinPhone;
-    Timestamp assignedAt;
+    Timestamp assignedAt, lastReviewedAt;
     boolean viewLogged = false;
+    boolean hasOpenAlert = false;
     final List<DocumentSnapshot> checkins = new ArrayList<>();
 
     @Override
@@ -113,6 +116,7 @@ public class PatientActivity extends AppCompatActivity {
                     phone = p.getString("phone");
                     kinPhone = p.getString("kinPhone");
                     assignedAt = p.getTimestamp("assignedAt");
+                    lastReviewedAt = p.getTimestamp("lastReviewedAt");
 
                     txtPatientName.setText(patientName);
                     txtPhone.setText(getString(R.string.pt_phone_format, phone));
@@ -138,10 +142,10 @@ public class PatientActivity extends AppCompatActivity {
     private void loadAlert() {
         db.collection("alerts").document(patientId).get()
                 .addOnSuccessListener(alert -> {
-                    boolean open = alert.exists() && "open".equals(alert.getString("status"));
-                    txtAlert.setVisibility(open ? View.VISIBLE : View.GONE);
-                    btnAlertHandled.setVisibility(open ? View.VISIBLE : View.GONE);
-                    if (open) {
+                    hasOpenAlert = alert.exists() && "open".equals(alert.getString("status"));
+                    txtAlert.setVisibility(hasOpenAlert ? View.VISIBLE : View.GONE);
+                    btnAlertHandled.setVisibility(hasOpenAlert ? View.VISIBLE : View.GONE);
+                    if (hasOpenAlert) {
                         Timestamp t = alert.getTimestamp("createdAt");
                         String when = (t == null) ? "" : new SimpleDateFormat("EEE d MMM, HH:mm",
                                 Locale.getDefault()).format(t.toDate());
@@ -152,20 +156,12 @@ public class PatientActivity extends AppCompatActivity {
                         }
                         txtAlert.setText(text);
                     }
+                    updateReviewedButtonState();
                 });
     }
 
     private void handleAlert() {
-        Map<String, Object> update = new HashMap<>();
-        update.put("status", "handled");
-        update.put("handledAt", FieldValue.serverTimestamp());
-        db.collection("alerts").document(patientId).update(update)
-                .addOnSuccessListener(v -> {
-                    Toast.makeText(this, R.string.pt_alert_done, Toast.LENGTH_SHORT).show();
-                    loadAlert();
-                })
-                .addOnFailureListener(e ->
-                        Toast.makeText(this, R.string.pt_error_load, Toast.LENGTH_LONG).show());
+        markReviewed();
     }
 
     // Only this counsellor's check-ins for this patient
@@ -197,21 +193,29 @@ public class PatientActivity extends AppCompatActivity {
                     txtCheckins.setText(sb.toString());
 
                     DocumentSnapshot latest = checkins.isEmpty() ? null : checkins.get(0);
-                    List<String> reasons = FlagRules.reasons(this, latest, assignedAt);
+                    List<String> reasons = FlagRules.reasons(this, latest, assignedAt, lastReviewedAt);
                     txtReasons.setText(reasons.isEmpty()
                             ? getString(R.string.pt_no_flags)
                             : getString(R.string.pt_flags_format, TextUtils.join(", ", reasons)));
 
-                    boolean anyUnreviewed = false;
-                    for (DocumentSnapshot c : checkins) {
-                        if (!Boolean.TRUE.equals(c.getBoolean("reviewed"))) {
-                            anyUnreviewed = true;
-                        }
-                    }
-                    btnReviewed.setEnabled(anyUnreviewed);
+                    updateReviewedButtonState();
                 })
                 .addOnFailureListener(e ->
                         Toast.makeText(this, R.string.pt_error_load, Toast.LENGTH_LONG).show());
+    }
+
+    private void updateReviewedButtonState() {
+        DocumentSnapshot latest = checkins.isEmpty() ? null : checkins.get(0);
+        List<String> reasons = FlagRules.reasons(this, latest, assignedAt, lastReviewedAt);
+
+        boolean anyUnreviewed = false;
+        for (DocumentSnapshot c : checkins) {
+            if (!Boolean.TRUE.equals(c.getBoolean("reviewed"))) {
+                anyUnreviewed = true;
+                break;
+            }
+        }
+        btnReviewed.setEnabled(anyUnreviewed || hasOpenAlert || !reasons.isEmpty());
     }
 
     // Opens the phone's dialler with the number already filled in. The counsellor presses
@@ -276,22 +280,37 @@ public class PatientActivity extends AppCompatActivity {
 
     private void markReviewed() {
         WriteBatch batch = db.batch();
-        int changes = 0;
+
+        boolean hasUpdates = false;
         for (DocumentSnapshot c : checkins) {
             if (!Boolean.TRUE.equals(c.getBoolean("reviewed"))) {
                 batch.update(c.getReference(), "reviewed", true);
-                changes++;
+                hasUpdates = true;
             }
         }
-        if (changes == 0) {
+
+        if (hasOpenAlert) {
+            DocumentReference alertRef = db.collection("alerts").document(patientId);
+            Map<String, Object> alertUpdate = new HashMap<>();
+            alertUpdate.put("status", "handled");
+            alertUpdate.put("handledAt", FieldValue.serverTimestamp());
+            batch.set(alertRef, alertUpdate, SetOptions.merge());
+            hasUpdates = true;
+        }
+
+        if (!hasUpdates) {
             return;
         }
+
         batch.commit()
                 .addOnSuccessListener(v -> {
                     Toast.makeText(this, R.string.pt_reviewed_done, Toast.LENGTH_SHORT).show();
+                    loadAlert();
                     loadCheckins();
                 })
-                .addOnFailureListener(e ->
-                        Toast.makeText(this, R.string.pt_error_load, Toast.LENGTH_LONG).show());
+                .addOnFailureListener(e -> {
+                    Log.e("PatientActivity", "Error marking reviewed", e);
+                    Toast.makeText(this, R.string.pt_error_load, Toast.LENGTH_LONG).show();
+                });
     }
 }

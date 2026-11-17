@@ -139,19 +139,21 @@ public class LoginActivity extends AppCompatActivity {
                     }
                 });
     }
-    // Welcome the user, then open Home (which sends counsellors on to their dashboard)
+    // Welcome the user, then open their respective activity (Dashboard for counsellors, Home for patients)
     private void openHome(String uid) {
         String cachedName = prefs.getString("cache_name_" + uid, "");
-        String cachedRole = prefs.getString("cache_role_" + uid, "patient");
+        String cachedRole = prefs.getString("cache_role_" + uid, "");
 
-        boolean hasCache = !cachedName.isEmpty();
+        boolean hasCache = !cachedName.isEmpty() && !cachedRole.isEmpty();
         if (hasCache) {
             Toast.makeText(this, getString(R.string.welcome_back_format, cachedName), Toast.LENGTH_LONG).show();
-            Intent intent = new Intent(LoginActivity.this, HomeActivity.class);
+            Class<?> target = "counsellor".equals(cachedRole) ? DashboardActivity.class : HomeActivity.class;
+            Intent intent = new Intent(LoginActivity.this, target);
             intent.putExtra("name", cachedName);
             intent.putExtra("role", cachedRole);
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
             startActivity(intent);
+            return;
         }
 
         db.collection("users").document(uid).get()
@@ -175,21 +177,18 @@ public class LoginActivity extends AppCompatActivity {
                             .putString("cache_role_" + uid, role)
                             .apply();
 
-                    if (!hasCache) {
-                        Toast.makeText(this, getString(R.string.welcome_back_format, name), Toast.LENGTH_LONG).show();
-                        Intent intent = new Intent(LoginActivity.this, HomeActivity.class);
-                        intent.putExtra("name", name);
-                        intent.putExtra("role", role);
-                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                        startActivity(intent);
-                    }
+                    Toast.makeText(this, getString(R.string.welcome_back_format, name), Toast.LENGTH_LONG).show();
+                    Class<?> target = "counsellor".equals(role) ? DashboardActivity.class : HomeActivity.class;
+                    Intent intent = new Intent(LoginActivity.this, target);
+                    intent.putExtra("name", name);
+                    intent.putExtra("role", role);
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                    startActivity(intent);
                 })
                 .addOnFailureListener(e -> {
-                    if (!hasCache) {
-                        auth.signOut();
-                        btnLogin.setEnabled(true);
-                        Toast.makeText(this, R.string.lg_error_profile, Toast.LENGTH_LONG).show();
-                    }
+                    auth.signOut();
+                    btnLogin.setEnabled(true);
+                    Toast.makeText(this, R.string.lg_error_profile, Toast.LENGTH_LONG).show();
                 });
     }
 

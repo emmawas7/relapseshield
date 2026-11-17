@@ -25,7 +25,9 @@ import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreException;
+import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QuerySnapshot;
+import com.google.firebase.firestore.Source;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -125,6 +127,14 @@ public class DashboardActivity extends AppCompatActivity {
                 code == null ? "" : code, count == null ? 0 : count.intValue()));
     }
 
+    private Task<DocumentSnapshot> fetchDoc(DocumentReference ref) {
+        return ref.get(Source.SERVER).continueWithTask(t -> t.isSuccessful() ? t : ref.get());
+    }
+
+    private Task<QuerySnapshot> fetchQuery(Query query) {
+        return query.get(Source.SERVER).continueWithTask(t -> t.isSuccessful() ? t : query.get());
+    }
+
     // Everything is requested at once, so the screen waits for one round trip, not two
     private void loadAll() {
         FirebaseUser me = auth.getCurrentUser();
@@ -133,15 +143,15 @@ public class DashboardActivity extends AppCompatActivity {
         }
         String myId = me.getUid();
 
-        Task<DocumentSnapshot> profileTask = db.collection("users").document(myId).get();
+        Task<DocumentSnapshot> profileTask = fetchDoc(db.collection("users").document(myId));
         Task<QuerySnapshot> alertTask =
-                db.collection("alerts").whereEqualTo("counsellorId", myId).get();
+                fetchQuery(db.collection("alerts").whereEqualTo("counsellorId", myId));
         Task<QuerySnapshot> reqTask =
-                db.collection("requests").whereEqualTo("counsellorId", myId).get();
+                fetchQuery(db.collection("requests").whereEqualTo("counsellorId", myId));
         Task<QuerySnapshot> patTask =
-                db.collection("users").whereEqualTo("counsellorId", myId).get();
+                fetchQuery(db.collection("users").whereEqualTo("counsellorId", myId));
         Task<QuerySnapshot> chkTask =
-                db.collection("checkins").whereEqualTo("counsellorId", myId).get();
+                fetchQuery(db.collection("checkins").whereEqualTo("counsellorId", myId));
 
         Tasks.whenAllSuccess(profileTask, alertTask, reqTask, patTask, chkTask)
                 .addOnSuccessListener(results -> {
@@ -212,7 +222,8 @@ public class DashboardActivity extends AppCompatActivity {
                         }
                         DocumentSnapshot latest =
                                 row.checkins.isEmpty() ? null : row.checkins.get(0);
-                        row.reasons = FlagRules.reasons(this, latest, p.getTimestamp("assignedAt"));
+                        row.reasons = FlagRules.reasons(this, latest,
+                                p.getTimestamp("assignedAt"), p.getTimestamp("lastReviewedAt"));
                         String latestLine = (latest == null)
                                 ? getString(R.string.db_no_checkins)
                                 : FlagRules.describe(this, latest, false);
@@ -332,19 +343,24 @@ public class DashboardActivity extends AppCompatActivity {
         startActivity(intent);
     }
 
-    // The app-wide menu (counsellor accounts are removed by the administrator)
+    // The app-wide menu. Counsellors have no account deletion or reminder, but have flag words.
     private void showMenu(View anchor) {
         PopupMenu menu = new PopupMenu(this, anchor);
         menu.getMenuInflater().inflate(R.menu.menu_app, menu.getMenu());
         menu.getMenu().removeItem(R.id.action_delete_account);
+        menu.getMenu().removeItem(R.id.action_reminder);
         menu.getMenu().add(0, 1001, 0, R.string.fw_menu); // counsellor-only item
         menu.setOnMenuItemClickListener(item -> {
             int id = item.getItemId();
             if (id == R.id.action_refresh) {
                 loadAll();
+                Toast.makeText(this, R.string.mn_refreshed, Toast.LENGTH_SHORT).show();
                 return true;
             } else if (id == 1001) {
                 startActivity(new Intent(DashboardActivity.this, WordsActivity.class));
+                return true;
+            } else if (id == R.id.action_resources) {
+                startActivity(new Intent(DashboardActivity.this, ResourcesActivity.class));
                 return true;
             } else if (id == R.id.action_about) {
                 new AlertDialog.Builder(this)

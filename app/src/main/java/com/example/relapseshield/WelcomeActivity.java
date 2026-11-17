@@ -8,6 +8,7 @@ import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.FirebaseFirestore;
 
 public class WelcomeActivity extends AppCompatActivity {
 
@@ -24,8 +25,41 @@ public class WelcomeActivity extends AppCompatActivity {
         SharedPreferences prefs = getSharedPreferences("relapse_prefs", MODE_PRIVATE);
         if (auth.getCurrentUser() != null) {
             if (prefs.getBoolean("remember", false)) {
-                startActivity(new Intent(this, HomeActivity.class));
-                finish();
+                String uid = auth.getCurrentUser().getUid();
+                String cachedRole = prefs.getString("cache_role_" + uid, "");
+                if ("counsellor".equals(cachedRole)) {
+                    startActivity(new Intent(this, DashboardActivity.class));
+                    finish();
+                    return;
+                } else if ("patient".equals(cachedRole)) {
+                    startActivity(new Intent(this, HomeActivity.class));
+                    finish();
+                    return;
+                }
+                FirebaseFirestore.getInstance().collection("users").document(uid).get()
+                        .addOnSuccessListener(doc -> {
+                            if (doc.exists()) {
+                                String role = doc.getString("role");
+                                String name = doc.getString("name");
+                                prefs.edit()
+                                        .putString("cache_name_" + uid, name == null ? "" : name)
+                                        .putString("cache_role_" + uid, role == null ? "patient" : role)
+                                        .apply();
+                                if ("counsellor".equals(role)) {
+                                    startActivity(new Intent(this, DashboardActivity.class));
+                                } else {
+                                    startActivity(new Intent(this, HomeActivity.class));
+                                }
+                            } else {
+                                auth.signOut();
+                                startActivity(new Intent(this, WelcomeActivity.class));
+                            }
+                            finish();
+                        })
+                        .addOnFailureListener(e -> {
+                            startActivity(new Intent(this, HomeActivity.class));
+                            finish();
+                        });
                 return;
             }
             auth.signOut();

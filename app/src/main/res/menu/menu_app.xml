@@ -4,6 +4,12 @@
         android:id="@+id/action_refresh"
         android:title="@string/mn_refresh" />
     <item
+        android:id="@+id/action_resources"
+        android:title="@string/rs_menu" />
+    <item
+        android:id="@+id/action_reminder"
+        android:title="@string/rm_menu" />
+    <item
         android:id="@+id/action_about"
         android:title="@string/mn_about" />
     <item

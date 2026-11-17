@@ -53,11 +53,23 @@ public class HomeActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        EdgeToEdge.enable(this);
-        setContentView(R.layout.activity_home);
 
         auth = FirebaseAuth.getInstance();
         db = FirebaseFirestore.getInstance();
+
+        SharedPreferences prefs = getSharedPreferences("relapse_prefs", MODE_PRIVATE);
+        if (auth.getCurrentUser() != null) {
+            String uid = auth.getCurrentUser().getUid();
+            String cachedRole = prefs.getString("cache_role_" + uid, "");
+            if ("counsellor".equals(cachedRole)) {
+                startActivity(new Intent(this, DashboardActivity.class));
+                finish();
+                return;
+            }
+        }
+
+        EdgeToEdge.enable(this);
+        setContentView(R.layout.activity_home);
 
         ScreenInsets.apply(findViewById(R.id.main), findViewById(R.id.layoutHeader),
                 findViewById(R.id.layoutBottom));
@@ -128,6 +140,8 @@ public class HomeActivity extends AppCompatActivity {
 
                     String role = doc.getString("role");
                     if ("counsellor".equals(role)) {
+                        SharedPreferences prefs = getSharedPreferences("relapse_prefs", MODE_PRIVATE);
+                        prefs.edit().putString("cache_role_" + user.getUid(), "counsellor").apply();
                         startActivity(new Intent(HomeActivity.this, DashboardActivity.class));
                         finish();
                     } else if (doc.getString("counsellorId") == null) {
@@ -242,6 +256,13 @@ public class HomeActivity extends AppCompatActivity {
             if (id == R.id.action_refresh) {
                 stopListening();
                 startListening();
+                Toast.makeText(HomeActivity.this, R.string.mn_refreshed, Toast.LENGTH_SHORT).show();
+                return true;
+            } else if (id == R.id.action_resources) {
+                startActivity(new Intent(HomeActivity.this, ResourcesActivity.class));
+                return true;
+            } else if (id == R.id.action_reminder) {
+                startActivity(new Intent(HomeActivity.this, ReminderActivity.class));
                 return true;
             } else if (id == R.id.action_about) {
                 new AlertDialog.Builder(HomeActivity.this)
