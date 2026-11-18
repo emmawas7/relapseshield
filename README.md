@@ -1,179 +1,267 @@
 # Relapse Shield
 
-Relapse Shield is a specialized mobile addiction recovery follow-up application designed to maintain a secure digital link between outpatient recovery patients and their assigned rehabilitation counselors. It facilitates daily patient self-reflections (mood, craving levels, triggers), automatically flags high-risk behavioral patterns for counselor intervention, and provides an immediate emergency panic and breathing support system.
+Relapse Shield is a follow-up app for people who have left a rehabilitation centre. A patient does a short check-in each day, covering mood, how strong the cravings are, and whether anything triggered them. The counsellor who treated them sees on one screen which patients need attention first. If a patient is in trouble, the app has an emergency screen with a guided breathing exercise, a one-tap dialler, and an urgent alert that goes straight to their counsellor.
+
+- **Course**: CSC3109 Mobile Applications Development, BCS III, Mbarara University of Science and Technology
+- **Student**: Wasswa Emmanuel (2024/BCS/225/PS)
+- **Repository Tags**: `m2`, `m3`, `m4`
 
 ## 1. Setup
-- **Development Environment**: Android Studio Quail 4 (2026.1.4), Java, Empty Views Activity architecture.
-- **SDK Configuration**: `minSdk 24` (Android 7.0), `targetSdk 37`. 
-  - *Why minSdk 24*: `minSdk 24` covers over 99% of active Android devices worldwide while providing full native support for modern AndroidX, WorkManager, AlarmManager, and Firebase 35.1 libraries without needing legacy multidex overhead.
-- **Backend Architecture**: Firebase Authentication (email/password) and Cloud Firestore NoSQL Database.
-- **Test Environments**:
-  - *Emulator*: Pixel 8 Pro (Android 14 / API 34, 1080x2400 resolution).
-  - *Physical Device*: Samsung Galaxy A32 (Android 13 / API 33).
-- **Security & Keys**: `google-services.json` is excluded from Git tracking (`.gitignore`). To run the project, place a valid `google-services.json` inside the `/app` module directory for package `com.example.relapseshield`.
+- Android Studio Quail 4 (2026.1.4), Java, Empty Views Activity project.
+- `minSdk 24` (Android 7.0), `targetSdk 37`. API 24 is the level used in the course setup, and Android 7.0 and above covers nearly every phone still in use.
+- Backend: Firebase Authentication (email and password) and Cloud Firestore, added through the Firebase BoM (version 35.1.0) so the library versions stay matched.
+- Tested on an Android Studio emulator and on a physical Samsung SM-G991U1 running Android 15.
+- Keys: `google-services.json` is not in the repository, because it is listed in `.gitignore`. To run the project, create a Firebase project for the package name `com.example.relapseshield`, switch on Email/Password sign-in and Firestore, and put your own `google-services.json` in the app folder.
 
 ## 2. What each milestone contains
-- **Milestone 1**: Concept design, user personas, declarative XML layout construction, input validation, welcome feedback, and activity lifecycle logging on Login.
-- **Milestone 2**: Navigation task flows, Intent data passing, counselor code linking, priority-sorted counselor dashboard, overflow menus, alert dialogs, native dialler/messaging integrations, and custom reusable list item layouts.
-- **Milestone 3**: Cloud Firestore database integration (full CRUD), offline snapshot caching, role-based authorization, account/record deletion confirmation dialogs, and security risk controls.
-- **Milestone 4**: REST API integration (`ResourcesActivity`), exact daily alarm capabilities (`AlarmManager` & `NotificationManager`), 10 comprehensive test cases, bug log, release build configuration, and technology stack comparison.
+- **Milestone 1**: concept and design, the Welcome, Login and Register screens, input validation, welcome feedback, and lifecycle logging on Login.
+- **Milestone 2**: navigation between screens with Intents, counsellor linking by code, the counsellor dashboard sorted by risk, menus and dialogs, calls and messages through the phone's own apps, and a reusable list row.
+- **Milestone 3**: the move to Cloud Firestore (create, read, update and delete), behaviour with no connection, role-based access, edit and delete for check-ins with confirmation, account deletion, flag words, faster loading, and the security and privacy controls.
+- **Milestone 4**: a REST API screen (`ResourcesActivity`), a daily reminder using exact alarms, a test log with ten cases, a bug log, and a stack comparison.
 
-## 3. Users & Personas
+## 3. Users and personas
 
-| User | What they do |
+| User | What they do in the app |
 |---|---|
-| **Patient** | Registers using a counselor's unique code, records next-of-kin contact info, submits daily check-ins, accesses emergency breathing tools, and receives daily reminders. |
-| **Counsellor** | Reviews linked patient requests, monitors a real-time red-flagged dashboard sorted by risk severity, manages custom keyword alert lists, logs contact actions, and marks patient check-ins reviewed. |
+| **Patient** | Registers with the code from their own counsellor, gives next-of-kin details, saves daily check-ins, edits or deletes them, uses the Emergency screen, sets a daily reminder, and can delete their own account |
+| **Counsellor** | Confirms the patients who ask for them, sees an alert-first dashboard, manages their own flag words, calls or messages a patient, and marks check-ins as reviewed |
 
 ### Personas
 
-#### Persona 1: Nabakooza Bridget Maria (Patient in Recovery)
-- **Age**: 24 | **Situation**: Discharged from an outpatient addiction treatment program 3 weeks ago; currently living independently and working.
-- **Goal**: Quickly complete a daily 1-minute reflection on mood and cravings without feeling overwhelmed, and have instant access to emergency support if cravings spike.
-- **Frustration**: Forgetting daily reflection habits, struggling with sudden triggers, and fearing relapse without timely counselor support.
+#### Persona 1: Nabakooza Bridget Maria (patient)
+- **Age**: 24. She left an outpatient addiction programme three weeks ago, lives on her own and works.
+- **Goal**: finish a daily one-minute reflection without feeling overwhelmed, and reach help quickly if cravings spike.
+- **Frustration**: she forgets the daily habit, gets hit by sudden triggers, and fears a relapse before her counsellor knows anything is wrong.
 
-#### Persona 2: Dr. Emmanuel Wasswa (Rehabilitation Counselor)
-- **Age**: 42 | **Situation**: Senior Addiction Counselor managing outpatient recovery clients alongside clinical rounds.
-- **Goal**: Instantly identify which patients are experiencing severe mood drops, high cravings, or extended silence so he can intervene before a full relapse occurs.
-- **Frustration**: Managing scattered paper notes and missing early warning signs because patients only reach out when a crisis has already occurred.
+#### Persona 2: Dr. Emmanuel Wasswa (counsellor)
+- **Age**: 42. A senior addiction counsellor who follows up outpatients between clinical rounds.
+- **Goal**: spot at a glance which patients have a falling mood, strong cravings or have gone quiet, so he can step in before a relapse.
+- **Frustration**: scattered paper notes, and hearing about problems only when a patient or relative calls after a crisis.
 
-## 4. Screens & Layout Justification
+## 4. Screens and design
 
-| Screen | Layouts Used | Main Controls | Purpose |
+| Screen | Class | Layouts | Main controls | Purpose |
+|---|---|---|---|---|
+| **Welcome** | `WelcomeActivity` | `ScrollView`, `LinearLayout` | Buttons | Explains the app and its privacy promise. Goes straight in if the user chose Remember me |
+| **Login** | `LoginActivity` | `ScrollView`, `ConstraintLayout` | `TextInputLayout`, `CheckBox` | Signs in, remembers the email, and offers a password reset |
+| **Register** | `RegisterActivity` | `ScrollView`, `LinearLayout` | `RadioButton`, `Spinner`, `CheckBox` | Creates a patient account (with counsellor code and next of kin) or a counsellor account (which gets its own code) |
+| **Connect with counsellor** | `LinkActivity` | `LinearLayout` | `TextInputLayout` | Lets a patient who is not linked yet enter a counsellor's code and see the request status |
+| **Home (patient)** | `HomeActivity` | `LinearLayout`, `ListView` | `ArrayAdapter`, `PopupMenu`, `AlertDialog` | The patient's check-ins, New check-in, Emergency, and the menu |
+| **New or edit check-in** | `CheckinActivity` | `ScrollView`, `LinearLayout` | `Slider`, `RadioGroup`, `CheckBox` | Mood 1 to 5, cravings, felt triggered, and a note that is checked for flag words |
+| **Emergency** | `EmergencyActivity` | `ScrollView`, `LinearLayout` | Buttons, `CountDownTimer` | One-minute breathing exercise, dialler, and an urgent alert to the counsellor |
+| **Dashboard (counsellor)** | `DashboardActivity` | `LinearLayout`, `ListView` | `ArrayAdapter`, `PopupMenu`, `AlertDialog` | Open alerts first, then requests, then patients in order of risk |
+| **Patient (counsellor)** | `PatientActivity` | `ScrollView`, `LinearLayout` | Buttons | One patient's contact details, next of kin and recent check-ins, with Call, Message, Call next of kin and Mark reviewed |
+| **Flag words** | `WordsActivity` | `ScrollView`, `LinearLayout`, `ListView` | `RadioGroup`, `TextInputEditText` | A counsellor adds and removes their own "watch" and "urgent" words |
+| **Help and resources** | `ResourcesActivity` | `LinearLayout`, `ListView` | `ProgressBar`, Button | Centres and helplines loaded over REST |
+| **Daily reminder** | `ReminderActivity` | `ScrollView`, `LinearLayout` | `SwitchCompat`, `TimePickerDialog` | Turns the daily reminder on or off, changes its time, and sends a test reminder |
+
+- **Why these layouts**: Every form sits in a `ScrollView`, so nothing is cut off when the keyboard is open, when the text size is increased or when the phone is turned sideways. Login uses a `ConstraintLayout` because its fields and links line up against each other. The longer forms use vertical `LinearLayout`s, which are predictable when a block appears or disappears, for example the patient-only fields on Register. Home, the dashboard and the resources list use a `ListView` with an adapter, because the number of rows changes as data arrives.
+- **Orientation and screen sizes**: The screens scroll and use `match_parent` and weighted widths instead of fixed sizes, so they work in portrait and landscape on different screen sizes. Android restores the text in fields that have an ID, and Emergency also saves whether the breathing exercise is finished, so rotating the phone does not lock the alert button again.
+- **Accessibility**: Touch targets are at least 48dp high. Text uses `sp`, so it follows the phone's font size, and spacing uses `dp`. Text colour on the background has strong contrast, the logo has a content description, and each field has a hint or label. Errors appear next to the field they belong to.
+- **Keyboard, menu and buttons**: After testing I changed three things so people do not have to guess. The screens shrink above the keyboard so the box being typed in stays visible. The Menu label has a small down arrow, and check-in rows have a chevron. Tapping a check-in opens a pop-up with real Edit, Delete and Close buttons, instead of hiding the options in a long press.
+- **Trust wording**: The Welcome screen says that a patient's information is shared only with their own counsellor and is stored in Google's cloud.
+
+## 5. Design decisions
+- **A Welcome screen that explains before it asks**: It answers "what is this, is it for me, can I trust it" before anyone is asked for details.
+- **Firestore instead of a list kept in the app**: My first version stored users in memory, which was enough to build Login and Register. That cannot be shared between a patient's phone and a counsellor's phone, so I moved to Cloud Firestore.
+- **The counsellor is a real user of the app**: The counsellor sees flags as they happen, which moves follow-up from reacting to a crisis to noticing early signs.
+- **Patients use their own doctor's code**: A patient can only link to the person who treated them, no one can pick a stranger from a list, and the counsellor must confirm the request.
+- **Only counsellors can call or message**: This keeps the clinical boundary clear and stops the buttons becoming a way to pester a counsellor.
+- **Counsellor accounts start unapproved**: Anyone can register as a counsellor, but nobody sees patient data until an administrator approves the account.
+- **A breathing step before the alert button, but never before the dialler**: The minute gives the patient a moment to settle. In real danger nobody should wait, so the call button is always available.
+
+## 6. Data model (Cloud Firestore)
+
+| Collection | Key fields | Purpose |
+|---|---|---|
+| `users` | `role`, `name`, `phone`, `homeArea`, `kinName`, `kinRelation`, `kinPhone`, `counsellorId`, `code`, `approved`, `clientCount`, `lastReviewedAt`, `assignedAt` | Profiles for patients and counsellors |
+| `counsellorCodes` | `counsellorId`, `counsellorName` | Matches each six-character code to its counsellor |
+| `requests` | `patientId`, `patientName`, `patientPhone`, `counsellorId`, `counsellorName`, `status`, `createdAt` | A patient's request, waiting for the counsellor to confirm |
+| `checkins` | `userId`, `counsellorId`, `mood`, `cravings`, `triggered`, `note`, `urgentWords`, `watchWords`, `reviewed`, `createdAt`, `editedAt` | Daily check-ins |
+| `alerts` | `patientId`, `patientName`, `counsellorId`, `counsellorName`, `status`, `source`, `words`, `createdAt`, `handledAt` | Urgent alerts from the Emergency screen or from urgent words in a note |
+| `accessLog` | `counsellorId`, `patientId`, `action`, `createdAt` | Records when a counsellor opens, calls or messages a patient |
+| `flagWords` | `counsellorId`, `word`, `level` (watch or urgent) | Each counsellor's own word list |
+| `resources` | `name`, `type`, `phone`, `district`, `notes` | Public centres and helplines, loaded by the REST screen. Edited by the administrator in the console |
+
+## 7. How a patient is flagged
+`FlagRules.java` holds the rules in one place. A patient is flagged when their latest unreviewed check-in shows any of these: mood of 2 or lower, cravings at High, or "felt triggered" together with cravings at Medium or High. A patient is also flagged after three or more days without a check-in. The three days are counted from the last check-in, or from the day they were confirmed or last reviewed.
+
+Flag words. Each counsellor keeps their own list. A watch word marks a check-in for attention, and an urgent word raises an alert for the counsellor straight away and shows the patient a help message. The patient's note is compared with their own counsellor's list when the check-in is saved, so a matching word becomes part of the record. If the word list cannot be loaded, the check-in is still saved, just without word matching.
+
+The dashboard shows open alerts first, then pending requests, then patients with the most flags first and the rest in alphabetical order. Marking a patient as reviewed clears the flags for the check-ins the counsellor has seen.
+
+## 8. Validation rules
+- **Login**: email required and in a valid format ("Enter your email address", "Enter a valid email address"). Password required and at least 6 characters. A wrong email and a wrong password give the same message, "Incorrect email or password", so the app does not reveal which emails have accounts.
+- **Register**:
+  - Full name: at least 2 characters.
+  - Email: valid format. Firebase reports an email that is already in use.
+  - Phone: `07XXXXXXXX` or `+2567XXXXXXXX`.
+  - Patients also give a home area, next of kin details and a counsellor code. A wrong code gives "That code was not found".
+  - Password: at least 8 characters with a letter and a digit, and the confirmation must match.
+  - The consent box must be ticked.
+- **Check-in**: mood is always between 1 and 5. Cravings start on None, so one choice is always selected. A note over 500 characters is refused with a message.
+- **Forgot password**: the email must be valid. The reply is the same whether or not an account exists.
+
+## 9. Navigation and Intents
+- **Explicit Intents**: move between the app's own screens. Extras carry user IDs, names, the role and check-in IDs.
+- **Back Stack Management**: After login and logout, `FLAG_ACTIVITY_NEW_TASK | FLAG_ACTIVITY_CLEAR_TASK` clears the back stack, so Back leaves the app instead of cycling through login screens.
+- **Role-based auto-navigation**: `WelcomeActivity` checks the saved sign-in and the saved role. A counsellor who chose Remember me goes straight to the dashboard and a patient straight to Home.
+- **Implicit Intents**: hand work to the phone's own apps. `ACTION_DIAL` opens the dialler with the number filled in, and `ACTION_SENDTO` with an `smsto:` address opens the messaging app with a greeting. The user presses the green button or Send. The app never makes the call itself, so it needs no call or SMS permission.
+
+## 10. Storage and behaviour with no connection
+
+Patient and counsellor data is in Cloud Firestore, so it survives closing the app and is shared between two phones. A small amount is kept on the phone in `SharedPreferences`: whether Remember me is ticked, the last email used, the reminder settings, and the user's name and role so the correct screen opens quickly. No password is ever stored.
+
+### What happens without a connection
+
+| Part of the app | Behaviour |
+|---|---|
+| **Login and Register** | These need a connection, because Firebase Authentication checks the account online. With none, the app shows "No internet connection" and does not crash |
+| **Home** | The list uses a live Firestore listener, which shows what is already saved on the phone straight away and updates when changes arrive |
+| **Counsellor dashboard** | It asks the server for fresh data first. If that fails, it falls back to the copy saved on the phone, so a counsellor with a poor signal still sees the last known list |
+| **Saving a check-in** | Firestore queues changes made offline and sends them when the connection returns. The Save button waits for the server to confirm, so offline it stays disabled until the connection is back. I have not added a message for this, and I list it as a limitation |
+| **Help and resources** | This screen reads from the internet and shows a clear "No internet connection" message with a Try again button (test case TC-09) |
+| **Emergency dialler** | This works with no data at all, because it only opens the phone's dialler. Someone in danger is never blocked by a missing signal |
+
+## 11. Security and privacy
+
+| Risk | Control | Where |
+|---|---|---|
+| **Any signed-in user reads other people's health data** | Firestore security rules: a patient reads and writes only their own records, and a counsellor reads only the records of their own linked patients | Firestore rules (kept in the Firebase console) |
+| **Someone claims to be a counsellor** | Counsellor accounts start unapproved (`approved: false`) and see nothing until an administrator approves them | `RegisterActivity`, `DashboardActivity`, rules |
+| **A user changes their own role or counsellor** | The rules refuse client updates to role, approved and counsellorId | Firestore rules |
+| **A counsellor takes on too many patients** | The limit of 10 is enforced in an atomic Firestore transaction when a request is accepted | `DashboardActivity` |
+| **A counsellor misuses contact details** | Every view, call and message is written to `accessLog` with the time | `PatientActivity` (`logAccess`) |
+| **Passwords exposed** | Handled only by Firebase Authentication. The app never stores a password, and Remember me stores only an email and a yes or no flag | `LoginActivity`, `RegisterActivity` |
+| **Finding out who has an account** | One message for a wrong email or password, and one reply for a password reset | `LoginActivity` |
+| **Someone deletes an account from an unlocked phone** | "Delete my account" asks for the password again before anything is removed | `HomeActivity` |
+| **Private information on a locked screen** | The reminder shows only a neutral "Reminder" on the lock screen | `ReminderReceiver` |
+| **Public data mixed with private data** | The resources collection holds only public centres and helplines, so it can be read without signing in, and it cannot be written from the app | Firestore rules |
+| **Keys in the repository** | `app/google-services.json` is listed in `.gitignore` | `.gitignore` |
+| **Unneeded permissions** | No call or SMS permission is requested. The only permissions are for notifications, exact alarms, restart handling and vibration, all used by the reminder | `AndroidManifest.xml` |
+
+- **Personal data collected, and why**: Name and email identify the account. Phone numbers let a counsellor call or message a patient. Home area helps the counsellor if a patient needs to be found. Next of kin details give someone to contact in an emergency. Check-in answers are the purpose of the app. The data is sent over an encrypted connection to Google's cloud (Firebase), and the consent box and About screen say so. A patient can delete their account and all their data from the menu.
+
+### Administrator procedure: removing a patient completely
+This is done by hand in the Firebase console, in this order:
+1. **Authentication, Users**: copy the patient's User UID, then delete the account.
+2. **Firestore, users**: delete the document with that UID.
+3. **Firestore, requests and alerts**: delete the document with that UID, if there is one.
+4. **Firestore, checkins**: filter `userId` equal to the UID and delete each one.
+5. **Firestore, users (the counsellor's document)**: lower `clientCount` by 1.
+6. On the counsellor's dashboard, open the menu and tap Refresh to confirm the patient is gone.
+
+If a profile is deleted but the login is not, the app signs the person out and shows "This account has been removed". I chose a console procedure over an admin screen because removals are rare and a hospital's records staff already use their own systems. The cost is that it depends on someone following the steps, and a missed step such as step 5 leaves a counsellor looking fuller than they are.
+
+## 12. REST API: the Help and resources screen
+- **What it does**: The screen sends an HTTP GET request to this project's Firestore REST address for the resources collection: `https://firestore.googleapis.com/v1/projects/<project id>/databases/(default)/documents/resources?pageSize=100`. The reply is JSON. Each entry sits under `documents`, and each field is wrapped in its type, for example `"name": { "stringValue": "..." }`. The app reads name, type, phone, district and notes and shows them as a list. Tapping an entry shows its details, with a Call button that opens the dialler.
+- **Off the main thread**: The request runs on a background thread (an `ExecutorService`), never on the main thread. The main thread draws the screen, so a slow network call there would freeze the app, and Android refuses network work on it with a `NetworkOnMainThreadException`. The result goes back to the screen with `runOnUiThread`, and only if the screen still exists, so rotating the phone while loading cannot crash it.
+- **Error handling**: The connection waits at most 8 seconds to connect and 8 seconds for data. Each kind of failure shows its own message and a Try again button:
+
+| What goes wrong | How the code catches it | What the user sees |
+|---|---|---|
+| **No internet** | `UnknownHostException`, `ConnectException`, `IOException` | "No internet connection. Check your data or Wi-Fi and try again." |
+| **The server is too slow** | `SocketTimeoutException` | "The server took too long to answer. Please try again." |
+| **The server refuses or fails** | `ApiException`, which carries the HTTP status code | "The server returned an error (code 403)..." |
+| **The reply cannot be read** | `JSONException` | "The information could not be read. Please try again later." |
+
+- **Where a POST would apply**: A POST to the same address would create a new resource entry, and a patient could one day send feedback the same way. The app does not need it, because the administrator manages the entries in the console, and writing from the app would need authentication and new security rules.
+
+## 13. Daily reminder (device capability and permission)
+The Daily reminder screen has a switch, a time picker and a "Send a test reminder now" button.
+
+- **Scheduling**: The reminder uses `AlarmManager` with an exact, battery-aware alarm (`setExactAndAllowWhileIdle`), so it arrives at the chosen time even when the phone is idle. When the alarm fires, `ReminderReceiver` shows the notification and schedules the next day's alarm. `BootReceiver` schedules it again after the phone restarts.
+- **Notification**: It uses a high-importance channel with the alarm sound and a vibration pattern, so it is hard to miss. Tapping it opens the app. On a locked screen only a neutral "Reminder" shows.
+- **Permission flow**: On Android 13 and above the app must ask before it can show notifications. Turning the switch on shows the system question through `ActivityResultContracts.RequestPermission`. If the user allows it, the reminder is set. If the user refuses, the switch turns itself off, the screen explains that notifications are blocked, and a button opens the phone's notification settings. The app keeps working normally.
+- **Exact alarms**: The manifest declares the exact alarm permissions. If Android refuses an exact alarm, the code falls back to a less exact one (`setAndAllowWhileIdle`) instead of crashing.
+
+## 14. Learning log
+
+| Topic | Sources | What I learned | A problem I solved |
 |---|---|---|---|
-| **Welcome** | `ScrollView`, `LinearLayout` | `Button` | App introduction, privacy trust statement, and main entry point to Login or Register. |
-| **Login** | `ScrollView`, `ConstraintLayout` | `TextInputLayout`, `CheckBox`, `Button` | Authenticates users, validates inputs, and saves "Remember Me" credentials in preferences. |
-| **Register** | `ScrollView`, `LinearLayout` | `RadioButton`, `Spinner`, `CheckBox`, `Button` | Form for registering as a Patient (with counselor code & kin info) or Counselor (generating a code). |
-| **Connect with Counsellor** | `LinearLayout` | `TextInputLayout`, `Button` | Unlinked patient onboarding screen to enter a 6-character counselor code. |
-| **Home (Patient)** | `LinearLayout`, `ListView` | `ArrayAdapter`, `Button`, `PopupMenu` | Patient home portal showing past check-ins, new check-in entry button, and emergency panic button. |
-| **New Check-in** | `ScrollView`, `LinearLayout` | `Slider`, `RadioGroup`, `CheckBox`, `TextInputEditText` | Form to log daily mood (1–5), craving level, trigger state, and optional note scanned for flag words. |
-| **Dashboard (Counsellor)** | `LinearLayout`, `ListView` | `ArrayAdapter`, `PopupMenu`, `AlertDialog` | Priority-sorted list displaying open urgent alerts, pending patient link requests, and red-flagged patients. |
-| **Patient Details (Counsellor)** | `ScrollView`, `LinearLayout` | `Button` (Call, Message, Call Kin, Mark Reviewed) | Displays patient contact details, next of kin, check-in history, and options to contact or mark reviewed. |
-| **Emergency Support** | `ScrollView`, `LinearLayout` | `CountDownTimer`, `Button` | Guided 1-minute breathing exercise, direct helpline dialler, and urgent alert trigger. |
-| **Flag Words** | `ScrollView`, `LinearLayout`, `ListView` | `RadioGroup`, `TextInputEditText`, `Button` | Counselor management screen for adding and removing custom "watch" and "urgent" keyword triggers. |
-| **Resources** | `ScrollView`, `ListView` | `ProgressBar`, `Button`, `ListView` | REST API screen fetching community rehabilitation centers and helplines via HTTP GET request. |
-| **Daily Reminder** | `ScrollView`, `LinearLayout` | `SwitchCompat`, `Button`, `TimePickerDialog` | Configures exact daily alarm reminders (`AlarmManager`) and includes an instant test alarm trigger. |
+| **Event handling** | Course eBook, Android documentation | A click listener is code the system calls when the user taps. Validation, `setError` and Toast messages all start from listeners | The Message button did nothing after two sets of edits clashed in one file. I logged every tap with a tag and checked in Logcat that the button reached the code, which showed the listener was missing |
+| **Activity lifecycle** | Android Developer Guide | `onCreate`, `onStart` and `onResume` run as a screen comes forward, and the reverse as it leaves. Rotation destroys and recreates the screen | Login logs every callback so I could watch rotation destroy and recreate the screen. Emergency saves `exerciseDone` in `onSaveInstanceState`, so a finished breathing exercise survives a rotation |
+| **Navigation and Intents** | Android API reference | An explicit Intent names the screen to open and carries extras. An implicit Intent asks the system for any app that can do the job | Counsellors briefly saw the patient screen after login. Welcome and Login now read the saved role first and open the dashboard directly |
+| **Lists, menus and dialogs** | Material Design guidelines | An adapter turns data into rows, and the list changes only when the adapter is told | The Menu looked like plain text and the Edit and Delete options were hidden. I added a down arrow, a chevron on each row, and a pop-up with real buttons |
+| **Firebase Authentication and Firestore** | Firebase documentation | Authentication proves who the user is, Firestore stores documents in collections, and a `WriteBatch` makes several changes succeed or fail together | The app was slow because screens waited for one request after another. Dashboard queries now run together, and Home uses a live listener that shows saved data first |
+| **Security rules** | Firebase documentation | Rules decide who can read and write each document, and they must be written around the real relationships in the data | My first rules let any signed-in user read everything. I rewrote them around the patient and counsellor link. Later, "Could not load patient" errors on review came from updates the rules refused, and I replaced them with batch updates to check-ins and alerts |
+| **Web requests and threads** | Android documentation | Network calls must not run on the main thread, and every failure needs its own message | The resources screen catches no connection, a timeout, a server error and unreadable data separately, and each shows a different message |
+| **Notifications and permissions** | Android documentation | From Android 13 an app must ask before showing notifications, and the user may say no | The reminder switch turns itself off when permission is refused and offers the settings page, so nothing crashes |
 
-### Welcome & Design Notes
-- **Why these layouts**: `ScrollView` guarantees no content is cut off on smaller screens or landscape mode; `ConstraintLayout` optimizes flat view hierarchies for forms; `LinearLayout` provides predictable vertical scrolling flows.
-- **Orientation & Screen Sizes**: Tested across portrait and landscape modes on multiple screen sizes. Layouts adjust dynamically using match_parent and weighted layouts (`layout_weight`).
-- **Accessibility**: All touch targets meet minimum 48dp heights, text sizes use scale-independent pixels (`sp`), layout dimensions use density-independent pixels (`dp`), and proper contrast ratios with `contentDescription` tags are applied.
-- **Trust Wording**: Headline and privacy promises explicitly clarify that personal health data is shared strictly with the user's assigned counselor and protected in Google Cloud.
+### Other real problems I solved
+- The app stayed purple until the theme style matched the Material 3 components.
+- The Firebase console had been reorganised, so Authentication and Firestore were under the product categories and not under "Build".
+- The first Gradle file listed the Firebase dependencies twice, which was untidy even though it built.
+- A Gradle build failed with "Duplicate resources" until I removed the extra `.png` launcher icons that clashed with the `.webp` ones.
 
-## 5. Design Decisions
-- **Welcome Screen Focus**: Designed as a trust-building landing page explaining what the app does before requesting credentials.
-- **Firebase Synchronization**: Transitioned from local in-memory storage to Cloud Firestore so counselor dashboards reflect patient check-ins immediately.
-- **Counselor Role Alignment**: Designed the counselor as an active co-user who receives real-time flags, moving recovery management from reactive to proactive.
-- **Counselor Code Authorization**: Required patients to use a doctor's code to prevent unauthorized or accidental counselor linking.
-- **Counselor-Only Communication Actions**: Call and Message buttons are restricted to counselor views to maintain clinical boundaries and prevent patient misuse.
-- **Counselor Account Approval**: Counselor accounts start unapproved by default to ensure only verified medical professionals can access sensitive patient records.
+## 15. Lifecycle behaviour (Login)
+`LoginActivity` writes a log line for each lifecycle callback, using one tag: `onCreate`, `onStart`, `onResume`, `onPause`, `onStop`, `onRestart`, `onDestroy`, `onSaveInstanceState` and `onRestoreInstanceState`. Filtering Logcat by that tag shows the order below for each action:
 
-## 6. Data Model (Cloud Firestore)
-
-| Collection | Key Fields | Purpose |
+| What I did | Callbacks, in order | What it means |
 |---|---|---|
-| `users` | `role`, `name`, `phone`, `homeArea`, `kinName`, `kinRelation`, `kinPhone`, `counsellorId`, `code`, `approved`, `clientCount`, `lastReviewedAt`, `assignedAt` | Stores user profiles for both patients and counselors. |
-| `counsellorCodes` | `counsellorId`, `counsellorName` | Index mapping 6-character counselor codes to counselor user IDs. |
-| `requests` | `patientId`, `patientName`, `patientPhone`, `counsellorId`, `counsellorName`, `status`, `createdAt` | Holds pending patient requests awaiting counselor confirmation. |
-| `checkins` | `userId`, `counsellorId`, `mood`, `cravings`, `triggered`, `note`, `urgentWords`, `watchWords`, `reviewed`, `createdAt`, `editedAt` | Daily patient check-in records. |
-| `alerts` | `patientId`, `patientName`, `counsellorId`, `counsellorName`, `status`, `source`, `words`, `createdAt`, `handledAt` | Urgent alerts raised by emergency triggers or urgent keyword matches. |
-| `accessLog` | `counsellorId`, `patientId`, `action`, `createdAt` | Audit log recording when a counselor views, calls, or messages a patient. |
-| `flagWords` | `counsellorId`, `word`, `level` (`watch` / `urgent`) | Counselor-defined keyword trigger list. |
+| **Launched the app** | `onCreate`, `onStart`, `onResume` | The screen is created, becomes visible, then is ready for input |
+| **Pressed the Home button** | `onPause`, `onStop`, `onSaveInstanceState` | The screen is no longer in front, and Android saves its state in case it is destroyed |
+| **Returned to the app** | `onRestart`, `onStart`, `onResume` | The screen was only stopped, so it restarts instead of being created again |
+| **Rotated the phone** | `onPause`, `onStop`, `onSaveInstanceState`, `onDestroy`, then `onCreate`, `onStart`, `onRestoreInstanceState`, `onResume` | Rotation destroys the screen and builds a new one, which is why state is saved and restored |
+| **Moved to Register or Home** | `onPause`, `onStop`, and `onDestroy` when the screen calls `finish()` | The screen is finished and removed from the back stack |
 
-## 7. Validation Rules
-- **Login**: Email required and valid syntax; password required and at least 6 characters. Returns a single unified error message for incorrect credentials to prevent account enumeration.
-- **Register**: Full name >= 2 chars; valid email format; phone formatted as `07XXXXXXXX` or `+2567XXXXXXXX`; patients require home area, next-of-kin details, and a 6-char counselor code; counselors generate a code; password >= 8 chars with a letter and a number; matching confirm password; consent checkbox checked.
-- **Check-in**: Mood slider (1–5); craving selection mandatory; note <= 500 characters.
+## 16. Test log and bug log
 
-## 8. Navigation & Intents
-- **Explicit Intents**: Used for app-internal screen transitions (e.g., Login to Dashboard, Patient list to Patient details). Intent extras carry user IDs, names, roles, and check-in IDs.
-- **Back Stack Management**: `FLAG_ACTIVITY_NEW_TASK | FLAG_ACTIVITY_CLEAR_TASK` is applied upon login/logout so the Back button leaves the app instead of cycling through authentication screens.
-- **Implicit Intents**: `Intent.ACTION_DIAL` opens the phone's native dialler with pre-filled numbers (without requesting direct call permissions); `Intent.ACTION_SENDTO` (`smsto:`) opens the phone's SMS app with a pre-filled greeting.
+### Test cases
 
-## 9. Security & Privacy Controls
+| ID | Area | What I did | Expected result | Result |
+|---|---|---|---|---|
+| **TC-01** | Login validation | Left email and password empty | "Enter your email address" and "Enter your password" appear next to the fields | Pass |
+| **TC-02** | Login | Used an unregistered email, then a wrong password | One message: "Incorrect email or password" | Pass |
+| **TC-03** | Counsellor linking | A patient entered a code that does not exist | "That code was not found" appears and no request is created | Pass |
+| **TC-04** | Contact | As a counsellor, opened a patient and tapped Message | The phone's messaging app opens addressed to the patient with a greeting filled in | Pass, after the fix in bug 5 |
+| **TC-05** | Flag words | A patient saved a note containing an urgent word | The check-in is saved, an urgent alert is created, and a help message is shown | Pass |
+| **TC-06** | Daily reminder | Turned the reminder switch on | The alarm is set and the screen confirms the time | Pass |
+| **TC-07** | Test reminder | Tapped "Send a test reminder now" | A notification with sound and vibration appears at once | Pass |
+| **TC-08** | REST | Opened Help and resources while online | The list loads from the REST address and shows the entries | Pass |
+| **TC-09** | REST, no connection | Opened Help and resources in airplane mode | "No internet connection" and a Try again button appear, with no crash | Pass |
+| **TC-10** | Delete confirmation | A patient tapped Delete on a check-in | A confirmation appears, and the record is removed only after confirming | Pass |
 
-| Risk Identified | Control Applied | Location in Code |
-|---|---|---|
-| **Unauthorized data access** | Firestore Security Rules ensure patients read/write only their own records; counselors read only linked client records. | Cloud Firestore Rules |
-| **Fake counselor registration** | Counselor accounts start unapproved (`approved: false`) and require manual admin authorization before viewing data. | `RegisterActivity.java`, `DashboardActivity.java` |
-| **Self-role manipulation** | Firestore Security Rules refuse client updates to `role`, `approved`, or `counsellorId` fields. | Cloud Firestore Rules |
-| **Counselor client overload** | Client limit capped at 10 patients per counselor, enforced via atomic Firestore transaction. | `DashboardActivity.java` (`accept()`) |
-| **Counselor contact misuse** | Every view, call, or message action is logged with timestamp accountability. | `PatientActivity.java` (`logAccess()`) |
-| **Password exposure** | Password authentication managed exclusively by Firebase Authentication; passwords never saved in plain text or local DB. | `LoginActivity.java`, `RegisterActivity.java` |
-| **Account enumeration attack** | Identical error message displayed for both invalid email and invalid password. | `LoginActivity.java` |
-| **Exposed API / Service Keys** | `google-services.json` excluded from Git version control via `.gitignore`. | `.gitignore` |
+### Bug log
 
-- **Data Privacy Statement**: The app collects minimal personal data (Name, Phone, Next of Kin, Daily Mood/Cravings). Data is transmitted securely over TLS to Google Cloud Firestore and accessed solely by the user's verified counselor.
-
-## 10. Learning Log
-
-| Topic | Sources Used | What I Learned | One Problem I Solved |
+| No. | Severity | What went wrong | Fix |
 |---|---|---|---|
-| **Event Handling** | Course eBook, Android Docs | How lambda listeners capture click, slider, radio, and check events and validate inputs declaratively. | Fixed form submissions executing before validation by disabling save buttons until validation passes. |
-| **Activity Lifecycle** | Android Developer Guide | How `onCreate`, `onStart`, `onResume`, `onPause`, `onStop`, `onDestroy` manage UI state during interruptions. | Fixed form state loss during screen rotation by storing state keys in `onSaveInstanceState` and using `savedInstanceState == null` checks. |
-| **Navigation & Intents** | Android API Reference | Passing primitive and string extras between Activities and managing the back stack using Intent flags. | Solved back-button navigation loops between Login and Register by calling `finish()` on transition. |
-| **Lists, Menus & Dialogs** | Material Design Guidelines | Building dynamic lists with `ArrayAdapter` and showing rich options via `PopupMenu` and `AlertDialog`. | Solved list item click crashes by checking bounds against underlying document ID lists. |
-| **Firebase Auth & Firestore** | Firebase Android Documentation | Authenticating users, performing `WriteBatch` operations, and querying collections asynchronously on background threads. | Fixed unreviewed check-ins remaining red-flagged by bundling check-in, alert, and review updates into a single atomic `WriteBatch`. |
-| **Security Rules & Permissions** | Android Security Best Practices | Implementing runtime permissions (`POST_NOTIFICATIONS`), intent filters, and Firestore Security Rules. | Fixed permission crash on Android 13+ by integrating `ActivityResultContracts.RequestPermission()`. |
+| **1** | Critical | Patients stayed red-flagged after the counsellor reviewed them | `markReviewed()` now updates the check-ins (`reviewed: true`) and the alert (`status: "handled"`) together in one batch, and `FlagRules.reasons()` clears the silence flag once reviewed |
+| **2** | Medium | The dashboard Refresh button showed a message without fetching new data | `loadAll()` now asks the server first (`Source.SERVER`), and falls back to the saved copy if that fails |
+| **3** | Medium | A counsellor briefly saw the patient screen after login | `WelcomeActivity` and `LoginActivity` read the saved role first and open `DashboardActivity` directly |
+| **4** | Medium | The app felt slow | Screens asked for data one request after another. The dashboard now requests everything at once, and Home uses a live listener that shows saved data first |
+| **5** | Medium | The Message button did nothing | The click listener had been lost when two sets of edits clashed in one file. I restored it, added a "still loading" message, a second way of opening the messaging app, and a log line for each tap |
+| **6** | Medium | The keyboard covered the box being typed in | `ScreenInsets` now shrinks each screen by the keyboard's height, so the field stays visible |
+| **7** | Low | The Menu did not look like a dropdown | Added a small down arrow beside the Menu label |
+| **8** | Low | Edit and Delete on check-ins were easy to miss | Rows now have a chevron, and tapping one opens a pop-up with Edit, Delete and Close buttons |
 
-- **Real Build Problems Solved**:
-  1. *App Theme Styling*: Resolved app staying purple by aligning custom style inheritance with Material 3 components in `themes.xml`.
-  2. *Duplicate Mipmap Resources*: Fixed a Gradle build failure (`Duplicate resources`) by removing redundant `.png` files when `.webp` launcher icons were generated.
-  3. *Permission Failure on Patient Review*: Fixed "Could not load patient" errors during review actions by replacing forbidden updates on `users` documents with batch updates to `checkins` and `alerts`.
+## 17. Technology stack comparison (Milestone 4)
 
-## 11. Lifecycle Observations
+I chose native Android in Java and compared it with cross-platform frameworks such as Flutter and React Native.
 
-Observed state transitions logged on `LoginActivity`:
-
-| User Action | Callbacks Executed (In Order) | System Behavior / Explanation |
+| Point | Native Android (Java) | Flutter or React Native |
 |---|---|---|
-| **Launch App** | `onCreate()` -> `onStart()` -> `onResume()` | Activity initializes view binding, sets up listeners, and becomes visible and interactive. |
-| **Press Home Button** | `onPause()` -> `onStop()` | Activity is no longer visible; UI state is saved in memory while background processes pause. |
-| **Return to App** | `onRestart()` -> `onStart()` -> `onResume()` | Activity comes back to the foreground and resumes interactive state without re-inflating views. |
-| **Rotate Screen** | `onPause()` -> `onStop()` -> `onDestroy()` -> `onCreate()` -> `onStart()` -> `onResume()` | Activity is destroyed and recreated to adapt layouts to new orientation; input state restored via `savedInstanceState`. |
-| **Tap Login / Navigate Away** | `onPause()` -> `onStop()` -> `onDestroy()` (if `finish()` called) | Activity finishes and is removed from the task back stack. |
+| **Speed on low-cost phones** | The code runs directly on Android, with no extra layer | Good, but each framework ships its own engine or runtime, which adds size and work |
+| **Device features** | Alarms, notification channels, receivers, runtime permissions and intents are available directly | These features usually need community plugins, and when a plugin lags behind a new Android version, native code is still needed |
+| **Platforms** | Android only | One codebase can target Android and iOS |
+| **Effort and upkeep** | An iPhone version would mean a second app | Less work to cover both platforms |
+| **Fit for this app** | Strong, because the app depends on exact alarms, notifications, the dialler and the messaging app | Possible, but the platform-specific parts would need extra care |
 
-## 12. Test Log & Bug Log
+- **My choice**: Native Android suits this app, because the reminder, the emergency dialler, the contact buttons and the permission handling all rely on deep Android features, and I already knew the platform from the course. The cost is that there is no iPhone version.
 
-### Test Cases (Milestone 4)
+## 18. Known limitations
+- Counsellor approval is set by hand in the Firebase console (`approved: true`).
+- Anyone can choose "counsellor" when registering. A real system would have an administrator create counsellor accounts.
+- Reminders are local to the phone. There are no remote push messages (Firebase Cloud Messaging) to a counsellor whose app is closed.
+- Offline, the Save button on a check-in waits for the server, so it stays disabled until the connection returns, and there is no message explaining this yet.
+- Flag words are matched on the patient's phone when the check-in is saved, not on a server.
+- The exact alarm permissions are meant for alarm and calendar apps, and Google Play restricts them, so a store release would need to review this choice.
+- Android backup is switched on in the manifest with the default rules, so the small amount of local data (the remembered email, the reminder settings and the cached name and role) may be included in a backup.
+- Data is stored in Google's cloud, which is outside Uganda, and the consent text says so.
+- Removing a patient is a manual console procedure, and the access log keeps only IDs afterwards.
+- All demo accounts and patients are fictitious.
 
-| Test # | Focus Area | Inputs / Conditions | Expected Result | Actual Result | Pass/Fail |
-|---|---|---|---|---|---|
-| **TC-01** | Login Validation | Blank email and password | "Email is required" and "Password is required" inline errors displayed | As expected | **PASS** |
-| **TC-02** | Login Auth | Unregistered email or wrong password | Single error: "Incorrect email or password" displayed | As expected | **PASS** |
-| **TC-03** | Counselor Linking | Patient enters invalid counselor code | Inline error: "Invalid code" displayed; no request created | As expected | **PASS** |
-| **TC-04** | Check-in Form | Cravings left unselected | Inline error prompting user to select a craving level | As expected | **PASS** |
-| **TC-05** | Keyword Flagging | Patient enters note containing "urgent" flag word | Check-in saved, urgent alert document created in Firestore, emergency help dialog shown | As expected | **PASS** |
-| **TC-06** | Daily Alarm | User toggles "Remind me every day" switch ON | Exact alarm scheduled with `AlarmManager`, toast confirmation shown | As expected | **PASS** |
-| **TC-07** | Instant Test Alarm | User taps "Send a test reminder now" | High-priority notification with alarm ringtone and vibration triggers immediately | As expected | **PASS** |
-| **TC-08** | REST API Connectivity | User opens Resources screen while online | `ResourcesActivity` executes HTTP GET request to Firestore REST endpoint, parses JSON, and displays list cards | As expected | **PASS** |
-| **TC-09** | REST API Offline | User opens Resources screen in Airplane Mode | `ResourcesActivity` catches `UnknownHostException` and displays user-friendly "No internet connection" message with Retry button | As expected | **PASS** |
-| **TC-10** | Delete Confirmation | Patient taps Delete on a check-in item | `AlertDialog` pops up asking for confirmation before deleting record from Firestore | As expected | **PASS** |
-
-### Bug Log
-- **Defect 1 (Critical)**: *Red-flagged patients remaining flagged after review*. **Fix**: Updated `markReviewed()` in `PatientActivity.java` to atomically update `checkins` (`reviewed: true`) and `alerts` (`status: "handled"`), and updated `FlagRules.reasons()` to clear silence flags once reviewed.
-- **Defect 2 (Medium)**: *Refresh button showing toast without fetching fresh data*. **Fix**: Updated `loadAll()` in `DashboardActivity.java` to fetch Firestore queries using `Source.SERVER` with offline fallbacks.
-- **Defect 3 (Medium)**: *Counselors briefly flashing patient screen on login*. **Fix**: Updated `LoginActivity.java` and `WelcomeActivity.java` to check the cached role upfront and open `DashboardActivity.class` directly.
-
-## 13. Technology Stack Comparison (Milestone 4)
-
-### Native Android (Java) vs. Cross-Platform Frameworks (Flutter / React Native)
-
-#### 1. Performance & Execution Efficiency
-Native Android developed in Java/Kotlin compiles directly into DEX bytecode that executes natively on the Android ART (Android Runtime) virtual machine. This provides optimal CPU/GPU rendering speeds, low memory overhead, and 60 FPS UI performance. In contrast, cross-platform frameworks like React Native rely on a JavaScript bridge to serialize layout and event calls, which can introduce micro-stuttering during complex list scrolling or animations. While Flutter compiles natively to C/C++ binaries using Skia/Impeller graphics, its initial bundle engine adds 10–15 MB to the baseline APK size.
-
-#### 2. Access to Native Platform APIs & Device Hardware
-In Native Android, accessing platform-level features like `AlarmManager`, `NotificationChannel`, `BroadcastReceiver`, `SharedPreferences`, or runtime permissions (`POST_NOTIFICATIONS`) requires no third-party wrappers and carries zero risk of library deprecation. In cross-platform development, developers must rely on community-maintained plugins (e.g., `flutter_local_notifications`, `workmanager`). If a community plugin is outdated or incompatible with the target Android SDK version (e.g., Android 14 exact alarm restrictions), native Java/Kotlin code bridges must still be written manually.
-
-#### 3. Development Cost, Code Reuse & Maintenance
-The main trade-off of Native Android is that code cannot be reused on iOS, effectively doubling the engineering effort if targeting both platforms. Cross-platform frameworks like Flutter or React Native allow 80–90% code reuse across iOS and Android, drastically reducing time-to-market for startup MVPs. However, for applications requiring high security, exact background scheduling, and deep system API integration (such as health follow-up and emergency alert systems), Native Android provides superior stability, complete SDK compliance, and simpler long-term maintenance.
-
-## 14. Known Limitations
-- Counselor account approval is currently toggled manually in the Firebase Console (`approved: true`).
-- Push notifications are delivered locally via `AlarmManager` and `NotificationManager`; remote FCM server pushes are not implemented.
-- Patient health records and counselor data are stored securely in Google Cloud Firestore.
-- Flag keyword matching rules execute client-side during check-in submission.
-
-## 15. AI Tools Used
-- **Claude (Anthropic)**: Assisted in writing initial layout definitions and Firestore query structures.
-- **Gemini (Google AI Plugin in Android Studio)**: Assisted in debugging Firestore batch permissions, implementing exact `AlarmManager` reminders, configuring `Source.SERVER` queries, fixing adaptive launcher icons, and organizing documentation.
+## 19. AI tools used
+I used two AI tools:
+- **Claude AI**: Helped write and explain initial code for registration, the check-in form and list, the counsellor dashboard, flag words, the Help and resources screen, the daily reminder, and speed and keyboard fixes.
+- **Gemini (Google AI Assistant in Android Studio)**: Helped debug Firestore batch permissions, build the exact-alarm reminder, set up server-first queries, fix adaptive launcher icons, and debug code. I ran and tested the code on an emulator and physical phone.
