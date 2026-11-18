@@ -181,7 +181,7 @@
     <string name="mn_about">About Relapse Shield</string>
     <string name="mn_logout">Log out</string>
     <string name="mn_about_title">Relapse Shield</string>
-    <string name="mn_about_message">A follow-up app between a patient and their own counsellor. Check-ins and contact details are shared only with that counsellor.\n\nVersion 4.5.0 · Milestone 4 build</string>
+    <string name="mn_about_message">A follow-up app between a patient and their own counsellor. Check-ins and contact details are shared only with that counsellor.\n\nVersion 4.5.0 · </string>
     <string name="mn_close">Close</string>
     <string name="mn_checkin_title">Check-in</string>
 
